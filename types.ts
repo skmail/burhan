@@ -7,6 +7,14 @@ interface Box {
   height: number;
 }
 
+export interface Handle {
+  id: string;
+  points: [number, number];
+  type: "point" | "cubicBezier1" | "cubicBezier2" | "quadraticBezier";
+}
+
+export type OnHandleDrag = (handle: Handle) => void;
+
 export interface Bounds {
   width: number;
   height: number;
