@@ -1,23 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { Bounds, Font, Handle, OnHandleDrag } from "../../types";
-import { Stage, Layer, Path, Circle, Group } from "react-konva";
+import { Bounds, Font, Handle, OnCommandUpdate, PointTuple } from "../../types";
+import { Stage, Layer, Path, Group } from "react-konva";
 import commandsToPath from "../../utils/commandsToPathData";
 import Metrics from "./Metrics";
 import computePathCommands from "../../utils/computePathCommands";
 import Handles from "./Handles";
 import { MinusIcon, PlusIcon } from "@heroicons/react/solid";
 import PanningArea from "./PanningArea";
+import snap from "../../utils/snap";
+import Guideline from "./GuideLine";
 
 interface Props {
   font: Omit<Font, "glyphs">;
-  glyph: Font["glyphs"][0];
-  onHandleDrag: OnHandleDrag;
+  glyph: Font["glyphs"]["items"][0];
+  onCommandUpdate: OnCommandUpdate;
 }
-export default function Editor({ font, glyph, onHandleDrag }: Props) {
+export default function Editor({ font, glyph, onCommandUpdate }: Props) {
   const [bounds, setBounds] = useState<Bounds>({
     width: 0,
     height: 0,
   });
+
+  const [guidelines, setGuidelines] = useState<
+    Array<[number, number, number, number]>
+  >([]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -66,7 +72,12 @@ export default function Editor({ font, glyph, onHandleDrag }: Props) {
   const x = width / 2 + pan[0] - (glyph.bbox.width / 2) * scale;
   const baseline =
     height / 2 + pan[1] + ((font.ascent + font.descent) / 2) * scale;
-  const commands = computePathCommands(glyph.path.commands, x, baseline, scale);
+  const commands = computePathCommands(
+    glyph.path.commands.ids.map((id) => glyph.path.commands.items[id]),
+    x,
+    baseline,
+    scale
+  );
   const data = commandsToPath(commands);
 
   const handles = commands.reduce((acc, command) => {
@@ -78,18 +89,21 @@ export default function Editor({ font, glyph, onHandleDrag }: Props) {
           id: command.id,
           points: [args[0], args[1]],
           type: "cubicBezier1",
+          indexes: [0, 1],
         });
 
         acc.push({
           id: command.id,
           points: [args[2], args[3]],
           type: "cubicBezier2",
+          indexes: [2, 3],
         });
 
         acc.push({
           id: command.id,
           points: [args[4], args[5]],
-          type: "point",
+          type: "cubicBezierPoint",
+          indexes: [4, 5],
         });
 
         break;
@@ -98,11 +112,13 @@ export default function Editor({ font, glyph, onHandleDrag }: Props) {
           id: command.id,
           points: [args[0], args[1]],
           type: "quadraticBezier",
+          indexes: [0, 1],
         });
         acc.push({
           id: command.id,
           points: [args[2], args[3]],
-          type: "point",
+          type: "quadraticBezierPoint",
+          indexes: [2, 3],
         });
         break;
       case "lineTo":
@@ -111,18 +127,57 @@ export default function Editor({ font, glyph, onHandleDrag }: Props) {
           id: command.id,
           points: [args[0], args[1]],
           type: "point",
+          indexes: [0, 1],
         });
     }
 
     return acc;
   }, [] as Handle[]);
 
-  const points = [[baseline, 0], ...handles.map((handle) => handle.points)];
+  const points = [
+    {
+      type: "baseline",
+      points: [0, 0],
+    },
+    {
+      type: "x",
+      points: [0, 0],
+    },
+    {
+      type: "width",
+      points: [glyph.advanceWidth, 0],
+    },
+    {
+      type: "ascent",
+      points: [0, font.ascent],
+    },
+    {
+      type: "descent",
+      points: [0, font.descent],
+    },
+    {
+      type: "xHeight",
+      points: [0, font.xHeight],
+    },
+    {
+      type: "capHeight",
+      points: [0, font.capHeight],
+    },
+    ...handles.map((handle) => {
+      return {
+        ...handle,
+        points: [
+          (handle.points[0] - x) / scale,
+          (baseline - handle.points[1]) / scale,
+        ],
+      };
+    }),
+  ];
 
-  let match = [];
+  const toCanvasPoint = (_x: number, _y: number) => {
+    return [x + _x * scale, baseline - _y * scale];
+  };
 
-  for (let point of points) {
-  }
   return (
     <div
       className="bg-gray-100 relative"
@@ -167,19 +222,76 @@ export default function Editor({ font, glyph, onHandleDrag }: Props) {
             scale={scale}
             baseline={baseline}
             x={x}
-            advanceWidth={glyph.bbox.maxX}
+            advanceWidth={glyph.advanceWidth}
           />
+
+          {guidelines.map((guideline, index) => {
+            console.log(guideline);
+            return (
+              <Guideline
+                key={index}
+                points={
+                  [
+                    ...toCanvasPoint(guideline[0], guideline[1]),
+                    ...toCanvasPoint(guideline[2], guideline[3]),
+                  ] as [number, number, number, number]
+                }
+              />
+            );
+          })}
+
           <Group opacity={1}>
             <Path data={data} strokeWidth={1} stroke="block" />
             <Handles
               handles={handles}
               onDrag={(handle) => {
-                onHandleDrag({
-                  ...handle,
-                  points: [handle.points[0] / scale, handle.points[1] / scale],
+                const command = glyph.path.commands.items[handle.id];
+
+                let xy: PointTuple = [
+                  command.args[handle.indexes[0]] + handle.points[0] / scale,
+                  command.args[handle.indexes[1]] + handle.points[1] / scale,
+                ];
+
+                const snapped = snap(
+                  {
+                    ...handle,
+                    points: xy,
+                  },
+                  points as any,
+                  scale
+                );
+
+                if (snapped.type !== "none" && snapped.fromPoints) {
+                  setGuidelines(
+                    snapped.fromPoints.map((p) => [
+                      snapped.points[0],
+                      snapped.points[1],
+                      p[0],
+                      p[1],
+                    ])
+                  );
+                } else {
+                  setGuidelines((lines) => (lines.length ? [] : lines));
+                }
+
+                xy = snapped.points;
+
+                const args = command.args.map((arg, index) => {
+                  const cIndex = handle.indexes.indexOf(index);
+                  if (cIndex !== -1) {
+                    return xy[cIndex];
+                  }
+                  return arg;
+                });
+
+                onCommandUpdate({
+                  ...command,
+                  args,
                 });
               }}
-              onDragEnd={() => {}}
+              onDragEnd={() => {
+                setGuidelines([]);
+              }}
             />
           </Group>
         </Layer>

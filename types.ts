@@ -1,3 +1,5 @@
+import Guideline from "./components/Editor/GuideLine";
+
 interface Box {
   minX: number;
   minY: number;
@@ -9,12 +11,20 @@ interface Box {
 
 export interface Handle {
   id: string;
-  points: [number, number];
-  type: "point" | "cubicBezier1" | "cubicBezier2" | "quadraticBezier";
+  points: PointTuple;
+  indexes: PointTuple;
+  type:
+    | "point"
+    | "cubicBezier1"
+    | "cubicBezier2"
+    | "cubicBezierPoint"
+    | "quadraticBezier"
+    | "quadraticBezierPoint";
 }
 
 export type OnHandleDrag = (handle: Handle) => void;
-
+export type OnCommandUpdate = (command: Command) => void;
+export type PointTuple = [number, number];
 export interface Bounds {
   width: number;
   height: number;
@@ -33,7 +43,7 @@ export interface Command {
 }
 
 export interface Path {
-  commands: Command[];
+  commands: Table<Command>;
 }
 
 interface Glyph {
@@ -43,6 +53,11 @@ interface Glyph {
   advanceWidth: number;
   id: string;
 }
+
+interface Table<T> {
+  ids: string[];
+  items: Record<string, T>;
+}
 export interface Font {
   ascent: number;
   descent: number;
@@ -50,7 +65,7 @@ export interface Font {
   lineGap: number;
   xHeight: number;
   bbox: Box;
-  glyphs: Glyph[];
-
+  glyphs: Table<Glyph>;
   unitsPerEm: number;
 }
+

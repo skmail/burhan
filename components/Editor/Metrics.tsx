@@ -72,7 +72,7 @@ export default function Metrics({
       x1: x,
       x2: x,
       color: "gray",
-      labelX: x  + 3,
+      labelX: x + 3,
       labelY: 1,
     },
     {
@@ -95,7 +95,7 @@ export default function Metrics({
           <Text
             text={metric.name}
             y={metric.labelY ? metric.labelY : metric.y1 - 15}
-            x={metric.labelX ? metric.labelX : metric.x1 }
+            x={metric.labelX ? metric.labelX : metric.x1}
             padding={2}
           />
           <Line

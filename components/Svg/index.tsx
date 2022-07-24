@@ -5,7 +5,7 @@ import computePathCommands from "../../utils/computePathCommands";
 
 interface Props {
   font: Omit<Font, "glyphs">;
-  glyph: Font["glyphs"][0];
+  glyph: Font["glyphs"]["items"][0];
   metrics?: boolean;
   fill?: boolean;
   width?: number;
@@ -25,7 +25,12 @@ function Svg({ glyph, font, fill = false, width = 50, height = 50 }: Props) {
   const baseline = height / 2 + ((font.bbox.maxY + font.descent) / 2) * scale;
   const x = width / 2 - (glyph.bbox.width / 2) * scale;
   const data = commandsToPathData(
-    computePathCommands(glyph.path.commands, x, baseline, scale)
+    computePathCommands(
+      glyph.path.commands.ids.map((id) => glyph.path.commands.items[id]),
+      x,
+      baseline,
+      scale
+    )
   );
   const viewBox = `0 0  ${width} ${height}`;
 

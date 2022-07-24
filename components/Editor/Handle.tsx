@@ -31,9 +31,8 @@ export default function Handle({
       const movedX = e.pageX - startX;
       const movedY = startY - e.pageY;
       onDrag({
-        id: handle.id,
+        ...handle,
         points: [movedX, movedY],
-        type: handle.type,
       });
     };
     const onUp = () => {
@@ -137,7 +136,7 @@ export default function Handle({
         />
       )}
 
-      {handle.type !== "point" && <Circle radius={4} {...props} />}
+      {handle.type !== "point" && <Circle {...props} radius={4} />}
       {handle.type === "point" && (
         <Rect
           {...props}
@@ -145,7 +144,7 @@ export default function Handle({
           y={props.y}
           width={8}
           height={8}
-          fill="#bef264"
+          fill={isHover ? "#fef08a" : "#bef264"}
           rotation={40}
           offsetX={4}
           offsetY={4}
