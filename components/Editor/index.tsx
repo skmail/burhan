@@ -226,7 +226,6 @@ export default function Editor({ font, glyph, onCommandUpdate }: Props) {
           />
 
           {guidelines.map((guideline, index) => {
-            console.log(guideline);
             return (
               <Guideline
                 key={index}
