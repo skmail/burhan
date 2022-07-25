@@ -47,12 +47,13 @@ export default function snap(
     const isHorizontal =
       isStrictHorizontal ||
       [
-        "cubicBezierPoint",
-        "cubicBezier1",
-        "cubicBezier2",
-        "quadraticBezier",
-        "quadraticBezierPoint",
-        "point",
+        "moveTo",
+        "lineTo",
+        "quadraticCurveTo",
+        "quadraticCurveToCP",
+        "bezierCurveTo",
+        "bezierCurveToCP1",
+        "bezierCurveToCP2",
       ].includes(point.command);
 
     if (isHorizontal && inRange(handle.args[0], point.args[0], scale)) {
