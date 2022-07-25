@@ -59,3 +59,8 @@ export interface Font {
   glyphs: Table<Glyph>;
   unitsPerEm: number;
 }
+
+export interface Settings {
+  gridSize: number;
+  snapToGrid: boolean;
+}

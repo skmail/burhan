@@ -17,7 +17,9 @@ type Result = {
 export default function snap(
   handle: Command,
   points: Command[],
-  scale: number = 1
+  scale: number = 1,
+  zoom: number = 1,
+  gridSize: number
 ): Result {
   let result: Result = {
     command: "none",
@@ -74,8 +76,19 @@ export default function snap(
       };
     }
   }
+
+  const guidelines = Object.values(fromPoints).filter(Boolean);
+
+  if (!guidelines.length && gridSize) {
+    const grid = gridSize / zoom;
+
+    const roundedX = Math.round(result.args[0] / grid) * grid;
+    const roundedY = Math.round(result.args[1] / grid) * grid;
+    result.args[0] = roundedX;
+    result.args[1] = roundedY;
+  }
   return {
     ...result,
-    fromPoints: Object.values(fromPoints).filter(Boolean),
+    fromPoints: guidelines,
   };
 }

@@ -6,6 +6,7 @@ import {
   OnCommandUpdate,
   onCommandsUpdate,
   PointTuple,
+  Settings,
 } from "../../types";
 import { Stage, Layer, Path, Group } from "react-konva";
 import commandsToPath from "../../utils/commandsToPathData";
@@ -19,6 +20,7 @@ import Guideline from "./Guideline";
 import Preview from "./Preview";
 import Button from "../Button";
 import SelectionArea from "./SelectionArea";
+import Grid from "./Grid";
 
 interface Props {
   font: Omit<Font, "glyphs">;
@@ -28,6 +30,7 @@ interface Props {
   forceUpdate?: string;
   selectedHandles: string[];
   onSelectHandles: (ids: string[]) => void;
+  settings: Settings;
 }
 export default function Editor({
   font,
@@ -37,6 +40,7 @@ export default function Editor({
   forceUpdate,
   selectedHandles,
   onSelectHandles,
+  settings,
 }: Props) {
   const [bounds, setBounds] = useState<Bounds>({
     width: 0,
@@ -109,8 +113,10 @@ export default function Editor({
   const scale = scaleWithoutZoom * zoom;
 
   const x = width / 2 + pan[0] - (glyph.bbox.width / 2) * scale;
+
   const baseline =
     height / 2 + pan[1] + ((font.ascent + font.descent) / 2) * scale;
+
   const commandsArray = glyph.path.commands.ids.map(
     (id) => glyph.path.commands.items[id]
   );
@@ -216,6 +222,17 @@ export default function Editor({
         handles={handles}
         workspaceRef={ref}
       />
+
+      <Grid
+        size={settings.gridSize}
+        zoom={zoom}
+        width={width}
+        height={height}
+        pan={[
+          x,
+          height / 2 + pan[1] + ((font.ascent + font.descent) / 2) * scale,
+        ]}
+      />
       <Stage width={bounds.width} height={bounds.height}>
         <Layer>
           <Metrics
@@ -259,7 +276,9 @@ export default function Editor({
                   (points as any).filter(
                     (p: any) => !selectedHandlesRef.current.includes(p.id)
                   ),
-                  scale
+                  scale,
+                  scaleWithoutZoom,
+                  settings.snapToGrid ? settings.gridSize : 0
                 );
 
                 if (snapped.command !== "none" && snapped.fromPoints) {

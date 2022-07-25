@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/solid";
 import { Transition } from "@headlessui/react";
 import Button from "../components/Button";
+import { Settings } from "../types";
 
 const Editor = dynamic(() => import("../components/Editor"), { ssr: false });
 
@@ -60,11 +61,17 @@ const Home: NextPage = () => {
 
   const query = useQuery<Font>(["font", sample], getFont, {
     staleTime: Infinity,
+    networkMode: "always",
+  });
+
+  const [settings, setSettings] = useState<Settings>({
+    gridSize: 20,
+    snapToGrid: true,
   });
 
   const queryClient = useQueryClient();
   const [isSidebarOpened, setIsSidebarOpened] = useState(true);
-  const [isOptionsOpened, setIsOptionsOpened] = useState(false);
+  const [isOptionsOpened, setIsOptionsOpened] = useState(true);
   const [forceUpdater, setForceUpdater] = useState("");
   const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
 
@@ -191,6 +198,7 @@ const Home: NextPage = () => {
       <div className="flex-1  w-full  overflow-hidden">
         {!!glyph && (
           <Editor
+            settings={settings}
             forceUpdate={forceUpdater}
             onCommandsUpdate={(commands) => {
               const data = {
@@ -287,8 +295,40 @@ const Home: NextPage = () => {
           setForceUpdater(String(Math.random()));
         }}
       >
-        <div className="bg-white w-fullx h-full shadow-xl border-l border-gray-300 p-4 text-xl font-thin text-gray-400">
-          Here{"'"}s is the future options
+        <div className="bg-white w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
+          <div>
+            <label className="text-sm uppercase text-gray-700">Grid size</label>
+            <input
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value)) {
+                  setSettings((settings) => ({
+                    ...settings,
+                    gridSize: value,
+                  }));
+                }
+              }}
+              className="p-1 text-sm rounded-md border border-gray-300"
+              value={settings.gridSize}
+              type="number"
+            />
+          </div>
+          <div>
+            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+              <input
+                className="mr-2"
+                onChange={(e) => {
+                  setSettings((settings) => ({
+                    ...settings,
+                    snapToGrid: e.target.checked,
+                  }));
+                }}
+                type="checkbox"
+                checked={settings.snapToGrid}
+              />
+              <span className="-mt-0.5">Snap to grid</span>
+            </label>
+          </div>
         </div>
       </Transition>
 
