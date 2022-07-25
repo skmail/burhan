@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Svg from "../components/Svg";
 import { Font } from "../types";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowLeftIcon,
@@ -68,6 +68,21 @@ const Home: NextPage = () => {
   const [forceUpdater, setForceUpdater] = useState("");
   const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
 
+  const dataRef = useRef<Font>();
+  dataRef.current = query.data;
+  useEffect(() => {
+    if (query.isLoading || !query.isSuccess) {
+      return;
+    }
+    const id =
+      dataRef.current?.glyphs.ids[
+        Math.floor(dataRef.current?.glyphs.ids.length / 4)
+      ];
+
+    if (id) {
+      setSelected(id);
+    }
+  }, [query.isLoading, query.isSuccess]);
   const [selected, setSelected] = useState<string>("50");
   if (query.isLoading) {
     return (
