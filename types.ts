@@ -65,3 +65,4 @@ export interface Settings {
   snapToGrid: boolean;
   snapToOtherPoints: boolean;
 }
+

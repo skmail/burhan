@@ -21,6 +21,11 @@ import Preview from "./Preview";
 import Button from "../Button";
 import SelectionArea from "./SelectionArea";
 import Grid from "./Grid";
+import {
+  HistoryCommandsUpdate,
+  HistoryCommandUpdate,
+  HistoryManager,
+} from "../../types/History";
 
 interface Props {
   font: Omit<Font, "glyphs">;
@@ -31,6 +36,7 @@ interface Props {
   selectedHandles: string[];
   onSelectHandles: (ids: string[]) => void;
   settings: Settings;
+  history: HistoryManager;
 }
 export default function Editor({
   font,
@@ -41,6 +47,7 @@ export default function Editor({
   selectedHandles,
   onSelectHandles,
   settings,
+  history,
 }: Props) {
   const [bounds, setBounds] = useState<Bounds>({
     width: 0,
@@ -179,6 +186,10 @@ export default function Editor({
 
   const selectedHandlesRef = useRef<string[]>([]);
   selectedHandlesRef.current = selectedHandles;
+  const pendingDragHistory = useRef<
+    HistoryCommandUpdate | HistoryCommandsUpdate
+  >();
+
   return (
     <div
       className="bg-gray-100 relative"
@@ -305,10 +316,10 @@ export default function Editor({
 
                 xy = snapped.args;
 
-                if (selectedHandlesRef.current.length) {
+                if (selectedHandlesRef.current.length > 1) {
                   const newHandles = selectedHandlesRef.current.reduce(
                     (acc, id) => {
-                      const cmd = glyph.path.commands.items[id];
+                      const cmd = glyph.path.commands.items[id] as Command;
                       let args: PointTuple;
                       if (id === handle.id) {
                         args = xy;
@@ -330,15 +341,47 @@ export default function Editor({
                   );
 
                   onCommandsUpdate(newHandles);
+
+                  console.log(pendingDragHistory.current?.payload);
+                  pendingDragHistory.current = {
+                    type: "commands.update",
+                    payload: {
+                      old: pendingDragHistory.current
+                        ? pendingDragHistory.current.payload.old
+                        : selectedHandles.reduce(
+                            (acc, id) => ({
+                              ...acc,
+                              [id]: glyph.path.commands.items[id],
+                            }),
+                            {} as Record<string, Command>
+                          ),
+                      new: newHandles,
+                    },
+                  } as HistoryCommandsUpdate;
                 } else {
-                  onCommandUpdate({
+                  const cmd: Command = {
                     ...command,
                     args: xy,
-                  });
+                  };
+                  onCommandUpdate(cmd);
+                  pendingDragHistory.current = {
+                    type: "command.update",
+                    payload: {
+                      //@ts-ignore
+                      old: pendingDragHistory.current
+                        ? pendingDragHistory.current.payload.old
+                        : command,
+                      new: cmd,
+                    },
+                  } as HistoryCommandUpdate;
                 }
               }}
               onDragEnd={() => {
                 setGuidelines([]);
+                if (pendingDragHistory.current) {
+                  history.addToHistory(pendingDragHistory.current);
+                  pendingDragHistory.current = undefined;
+                }
               }}
             />
           </Group>

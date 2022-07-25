@@ -3,7 +3,7 @@ import type { NextPage } from "next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import Svg from "../components/Svg";
-import { Font } from "../types";
+import { Command, Font } from "../types";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -14,6 +14,8 @@ import {
 import { Transition } from "@headlessui/react";
 import Button from "../components/Button";
 import { Settings } from "../types";
+import useHistory from "../hooks/useHistory";
+import { History } from "../types/History";
 
 const Editor = dynamic(() => import("../components/Editor"), { ssr: false });
 
@@ -76,6 +78,19 @@ const Home: NextPage = () => {
   const [forceUpdater, setForceUpdater] = useState("");
   const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
 
+  const history = useHistory((history, key) => {
+    switch (history.type) {
+      case "command.update":
+        updateCommands({
+          [history.payload[key].id]: history.payload[key],
+        });
+        break;
+      case "commands.update":
+        updateCommands(history.payload[key]);
+        break;
+    }
+  });
+
   const dataRef = useRef<Font>();
   dataRef.current = query.data;
   useEffect(() => {
@@ -92,6 +107,36 @@ const Home: NextPage = () => {
     }
   }, [query.isLoading, query.isSuccess]);
   const [selected, setSelected] = useState<string>("50");
+
+  const updateCommands = (commands: Record<string, Command>) => {
+    if (!query.data) {
+      return;
+    }
+    const data = {
+      ...query.data,
+      glyphs: {
+        ...query.data.glyphs,
+        items: {
+          ...query.data.glyphs.items,
+          [selected]: {
+            ...query.data.glyphs.items[selected],
+            path: {
+              ...query.data.glyphs.items[selected].path,
+              commands: {
+                ...query.data.glyphs.items[selected].path.commands,
+                items: {
+                  ...query.data.glyphs.items[selected].path.commands.items,
+                  ...commands,
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    queryClient.setQueryData(["font", sample], data);
+  };
   if (query.isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center text-xl font-light flex-col space-y-4">
@@ -116,24 +161,49 @@ const Home: NextPage = () => {
 
   return (
     <div className="h-screen flex  overflow-hidden">
-      <Button
-        onClick={(e) => {
-          setIsSidebarOpened((b) => !b);
-          setForceUpdater(String(Math.random()));
-        }}
-        className={`fixed bottom-2 z-50 ${
+      <div
+        className={`fixed bottom-2 space-y-2 z-50 ${
           isSidebarOpened ? "left-[240px] ml-2" : "left-2"
         }`}
       >
-        <svg viewBox="0 0 32 32" className="h-5 w-5" fill="currentColor">
-          <g transform="translate(0, 3)">
-            <rect width="32" height="6" rx="4" />
-            <rect y="10" width="32" height="6" rx="4" />
-            <rect y="20" width="32" height="6" rx="4" />
-            <rect y="10" width="32" height="6" rx="4" />
-          </g>
-        </svg>
-      </Button>
+        <Button
+          onClick={(e) => {
+            setIsSidebarOpened((b) => !b);
+            setForceUpdater(String(Math.random()));
+          }}
+        >
+          <svg viewBox="0 0 32 32" className="h-5 w-5" fill="currentColor">
+            <g transform="translate(0, 3)">
+              <rect width="32" height="6" rx="4" />
+              <rect y="10" width="32" height="6" rx="4" />
+              <rect y="20" width="32" height="6" rx="4" />
+              <rect y="10" width="32" height="6" rx="4" />
+            </g>
+          </svg>
+        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={history.undo} data-undo disabled={!history.canUndo}>
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 22"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="m8.687 0-8 8L0 8.719l.687.719 8 8L10.125 16 3.844 9.719h13.062c2.754 0 5 2.246 5 5v7h2v-7c0-3.844-3.156-7-7-7H3.843l6.282-6.281L8.687 0Z" />
+            </svg>
+          </Button>
+          <Button data-redo onClick={history.redo} disabled={!history.canRedo}>
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 22"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="m15.219 0 8 8 .687.719-.687.719-8 8L13.781 16l6.281-6.281H7a5.01 5.01 0 0 0-5 5v7H0v-7c0-3.844 3.156-7 7-7h13.063l-6.282-6.281L15.219 0Z" />
+            </svg>
+          </Button>
+        </div>
+      </div>
       <Transition
         show={isSidebarOpened}
         appear
@@ -199,61 +269,16 @@ const Home: NextPage = () => {
       <div className="flex-1  w-full  overflow-hidden">
         {!!glyph && (
           <Editor
+            history={history}
             settings={settings}
             forceUpdate={forceUpdater}
             onCommandsUpdate={(commands) => {
-              const data = {
-                ...query.data,
-                glyphs: {
-                  ...query.data.glyphs,
-                  items: {
-                    ...query.data.glyphs.items,
-                    [selected]: {
-                      ...query.data.glyphs.items[selected],
-                      path: {
-                        ...query.data.glyphs.items[selected].path,
-                        commands: {
-                          ...query.data.glyphs.items[selected].path.commands,
-                          items: {
-                            ...query.data.glyphs.items[selected].path.commands
-                              .items,
-                            ...commands,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              };
-
-              queryClient.setQueryData(["font", sample], data);
+              updateCommands(commands);
             }}
             onCommandUpdate={(command) => {
-              const data = {
-                ...query.data,
-                glyphs: {
-                  ...query.data.glyphs,
-                  items: {
-                    ...query.data.glyphs.items,
-                    [selected]: {
-                      ...query.data.glyphs.items[selected],
-                      path: {
-                        ...query.data.glyphs.items[selected].path,
-                        commands: {
-                          ...query.data.glyphs.items[selected].path.commands,
-                          items: {
-                            ...query.data.glyphs.items[selected].path.commands
-                              .items,
-                            [command.id]: command,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              };
-
-              queryClient.setQueryData(["font", sample], data);
+              updateCommands({
+                [command.id]: command,
+              });
             }}
             onSelectHandles={(ids: string[]) => {
               setSelectedHandles(ids);
@@ -265,21 +290,24 @@ const Home: NextPage = () => {
         )}
       </div>
 
-      <Button
-        onClick={(e) => {
-          setIsOptionsOpened((b) => !b);
-          setForceUpdater(String(Math.random()));
-        }}
+      <div
         className={`fixed top-2  z-50 ${
           isOptionsOpened ? "right-[240px]  mr-2" : "right-2"
         }`}
       >
-        {isOptionsOpened ? (
-          <ArrowRightIcon className="h-5 w-5" />
-        ) : (
-          <ArrowLeftIcon className="h-5 w-5" />
-        )}
-      </Button>
+        <Button
+          onClick={(e) => {
+            setIsOptionsOpened((b) => !b);
+            setForceUpdater(String(Math.random()));
+          }}
+        >
+          {isOptionsOpened ? (
+            <ArrowRightIcon className="h-5 w-5" />
+          ) : (
+            <ArrowLeftIcon className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
       <Transition
         show={isOptionsOpened}
         appear

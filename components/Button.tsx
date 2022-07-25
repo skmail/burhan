@@ -10,7 +10,7 @@ export default function Button({
   let cls = "";
 
   if (variant === "primary") {
-    cls = "bg-white text-gray-600 hover:ring hover:ring-gray-300 shadow ";
+    cls = "bg-white text-gray-600 enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50";
   } else {
     cls = "bg-blue-500 text-white hover:ring hover:ring-gray-300 shadow ";
   }
