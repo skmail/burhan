@@ -6,7 +6,7 @@ const SVG_COMMANDS: Record<Command["command"], string> = {
   quadraticCurveTo: "",
   quadraticCurveToCP: "Q",
   bezierCurveTo: "",
-  bezierCurveToCP1: "Q",
+  bezierCurveToCP1: "C",
   bezierCurveToCP2: "",
   closePath: "Z",
 };
