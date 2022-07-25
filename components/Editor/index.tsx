@@ -171,6 +171,8 @@ export default function Editor({
     return [x + _x * scale, baseline - _y * scale];
   };
 
+  const selectedHandlesRef = useRef<string[]>([]);
+  selectedHandlesRef.current = selectedHandles;
   return (
     <div
       className="bg-gray-100 relative"
@@ -232,12 +234,13 @@ export default function Editor({
           <Group opacity={1}>
             <Path data={data} strokeWidth={1} stroke="black" />
             <Handles
-              onSelect={(id) => onSelectHandles([id])}
+              onSelect={(id) => {
+                onSelectHandles([id]);
+              }}
               handles={handles}
               selectedHandles={selectedHandles}
               onDrag={(handle) => {
                 const command = glyph.path.commands.items[handle.id];
-
                 const amountToMove = [
                   handle.args[0] / scale,
                   handle.args[1] / scale,
@@ -254,7 +257,7 @@ export default function Editor({
                     args: xy,
                   },
                   (points as any).filter(
-                    (p: any) => !selectedHandles.includes(p.id)
+                    (p: any) => !selectedHandlesRef.current.includes(p.id)
                   ),
                   scale
                 );
@@ -282,26 +285,29 @@ export default function Editor({
 
                 xy = snapped.args;
 
-                if (selectedHandles.length) {
-                  const newHandles = selectedHandles.reduce((acc, id) => {
-                    const cmd = glyph.path.commands.items[id];
-                    let args: PointTuple;
-                    if (id === handle.id) {
-                      args = xy;
-                    } else {
-                      args = [
-                        cmd.args[0] + amountToMove[0] + snapDiff[0],
-                        cmd.args[1] + amountToMove[1] + snapDiff[1],
-                      ];
-                    }
-                    return {
-                      ...acc,
-                      [id]: {
-                        ...cmd,
-                        args,
-                      },
-                    };
-                  }, {} as Record<string, Command>);
+                if (selectedHandlesRef.current.length) {
+                  const newHandles = selectedHandlesRef.current.reduce(
+                    (acc, id) => {
+                      const cmd = glyph.path.commands.items[id];
+                      let args: PointTuple;
+                      if (id === handle.id) {
+                        args = xy;
+                      } else {
+                        args = [
+                          cmd.args[0] + amountToMove[0] + snapDiff[0],
+                          cmd.args[1] + amountToMove[1] + snapDiff[1],
+                        ];
+                      }
+                      return {
+                        ...acc,
+                        [id]: {
+                          ...cmd,
+                          args,
+                        },
+                      };
+                    },
+                    {} as Record<string, Command>
+                  );
 
                   onCommandsUpdate(newHandles);
                 } else {

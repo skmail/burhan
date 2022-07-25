@@ -25,7 +25,11 @@ export default function Handles({
         handle={handle}
         onDragEnd={onDragEnd}
         isSelected={selectedHandles.includes(handle.id)}
-        onSelect={() => onSelect(handle.id)}
+        onSelect={(deselect = false) => {
+          if (deselect || !selectedHandles.includes(handle.id)) {
+            onSelect(handle.id);
+          }
+        }}
       />
     );
 

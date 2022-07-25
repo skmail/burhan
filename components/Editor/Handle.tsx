@@ -10,7 +10,7 @@ interface Props {
   index: number;
   handles: Command[];
   isSelected?: boolean;
-  onSelect: () => void;
+  onSelect: (deselect?: boolean) => void;
 }
 
 export default function Handle({
@@ -24,14 +24,17 @@ export default function Handle({
 }: Props) {
   const [isHover, setIsHover] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingStarted, setIsDraggingStarted] = useState(false);
 
   const onMouseDown: KonvaNodeEvents["onMouseDown"] = (e) => {
+    onSelect();
     e.evt.preventDefault();
     e.evt.stopPropagation();
     let startX = e.evt.pageX;
     let startY = e.evt.pageY;
     setIsDragging(true);
     const onMove = (e: MouseEvent) => {
+      setIsDraggingStarted(true);
       e.preventDefault();
       e.stopPropagation();
       const movedX = e.pageX - startX;
@@ -47,6 +50,7 @@ export default function Handle({
       onDragEnd();
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
+      setIsDraggingStarted(false)
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
@@ -89,6 +93,9 @@ export default function Handle({
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
+    onClick: () => {
+      onSelect(!isDraggingStarted);
+    },
   };
 
   return (
@@ -162,7 +169,6 @@ export default function Handle({
           rotation={40}
           offsetX={4}
           offsetY={4}
-          onClick={onSelect}
         />
       )}
     </>
