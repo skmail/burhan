@@ -4,39 +4,14 @@ export default function computePathCommands(
   commands: Command[],
   x = 0,
   y = 0,
-  scale = 1
+  scale = 1,
+  scaleX = scale
 ) {
   return commands.map((command) => {
     let args = command.args;
 
-    switch (command.command) {
-      case "moveTo":
-        args = [x + args[0] * scale, y + -args[1] * scale];
-        break;
-
-      case "lineTo":
-        args = [x + args[0] * scale, y + -args[1] * scale];
-        break;
-
-      case "quadraticCurveTo":
-        args = [
-          x + args[0] * scale,
-          y + -args[1] * scale,
-          x + args[2] * scale,
-          y + -args[3] * scale,
-        ];
-        break;
-
-      case "bezierCurveTo": 
-        args = [
-          x + args[0] * scale,
-          y + -args[1] * scale,
-          x + args[2] * scale,
-          y + -args[3] * scale,
-          x + args[4] * scale,
-          y + -args[5] * scale,
-        ];
-        break;
+    if (args.length) {
+      args = [x + args[0] * scaleX, y + -args[1] * scale];
     }
 
     return {

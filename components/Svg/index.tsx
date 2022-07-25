@@ -12,13 +12,6 @@ interface Props {
   height?: number;
 }
 
-const SVG_COMMANDS: Record<Command["command"], string> = {
-  moveTo: "M",
-  lineTo: "L",
-  quadraticCurveTo: "Q",
-  bezierCurveTo: "C",
-  closePath: "Z",
-};
 function Svg({ glyph, font, fill = false, width = 50, height = 50 }: Props) {
   const scale = (1 / font.unitsPerEm) * Math.min(width, height);
 

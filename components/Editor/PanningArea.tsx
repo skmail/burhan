@@ -39,6 +39,8 @@ export default function PanningArea({ onPan }: Props) {
     let startX = 0;
     let startY = 0;
     const onMouseMove = (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
       const movedX = e.clientX - startX;
       const movedY = e.clientY - startY;
       startY = e.clientY;

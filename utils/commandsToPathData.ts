@@ -3,8 +3,11 @@ import { Command } from "../types";
 const SVG_COMMANDS: Record<Command["command"], string> = {
   moveTo: "M",
   lineTo: "L",
-  quadraticCurveTo: "Q",
-  bezierCurveTo: "C",
+  quadraticCurveTo: "",
+  quadraticCurveToCP: "Q",
+  bezierCurveTo: "",
+  bezierCurveToCP1: "Q",
+  bezierCurveToCP2: "",
   closePath: "Z",
 };
 

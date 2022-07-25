@@ -19,26 +19,31 @@ export default function Metrics({
   const lines = [
     {
       name: "ascent",
+      origin: font.ascent,
       y: y + -font.ascent * scaleY,
       color: "green",
     },
     {
       name: "descent",
+      origin: font.descent,
       y: y + -font.descent * scaleY,
       color: "red",
     },
     {
       name: "capHeight",
+      origin: font.capHeight,
       y: y + -font.capHeight * scaleY,
       color: "#64748b",
     },
     {
       name: "xHeight",
+      origin: font.xHeight,
       y: y + -font.xHeight * scaleY,
       color: "#94a3b8",
     },
     {
       name: "baseline",
+      origin: y,
       y: y,
       color: "#334155",
     },
@@ -63,7 +68,7 @@ export default function Metrics({
               }}
               fill={line.color}
             >
-              {line.name}
+              {line.name} ss ({line.origin})
             </text>
             <line
               data-y={line.y}

@@ -1,25 +1,39 @@
-import { Command, Handle as HandleType, OnHandleDrag } from "../../types";
+import { Command, OnHandleDrag } from "../../types";
 import Handle from "./Handle";
 
 interface Props {
-  handles: HandleType[];
+  handles: Command[];
   onDrag: OnHandleDrag;
   onDragEnd: () => void;
+  selectedHandles: string[];
+  onSelect: (id: string) => void;
 }
-export default function Handles({ handles, onDrag, onDragEnd }: Props) {
+export default function Handles({
+  handles,
+  onDrag,
+  onDragEnd,
+  selectedHandles,
+  onSelect,
+}: Props) {
   const output = handles.reduce((acc, handle, index) => {
     const h = (
       <Handle
         index={index}
         handles={handles}
         onDrag={onDrag}
-        key={`${handle.id}-${handle.type}`}
+        key={handle.id}
         handle={handle}
         onDragEnd={onDragEnd}
+        isSelected={selectedHandles.includes(handle.id)}
+        onSelect={() => onSelect(handle.id)}
       />
     );
 
-    if (handle.type === "point") {
+    if (
+      ["bezierCurveTo", "moveTo", "lineTo", "quadraticCurveTo"].includes(
+        handle.command
+      )
+    ) {
       acc.push(h);
     } else {
       acc.unshift(h);

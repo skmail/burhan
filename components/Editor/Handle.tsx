@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Circle, Line, KonvaNodeEvents, Rect, Group } from "react-konva";
 
-import { Handle as HandleType, OnHandleDrag } from "../../types";
+import { Command, OnHandleDrag } from "../../types";
 
 interface Props {
-  handle: HandleType;
+  handle: Command;
   onDrag: OnHandleDrag;
   onDragEnd: () => void;
   index: number;
-  handles: HandleType[];
+  handles: Command[];
+  isSelected?: boolean;
+  onSelect: () => void;
 }
 
 export default function Handle({
@@ -17,11 +19,15 @@ export default function Handle({
   onDragEnd,
   index,
   handles,
+  isSelected = false,
+  onSelect,
 }: Props) {
   const [isHover, setIsHover] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const onMouseDown: KonvaNodeEvents["onMouseDown"] = (e) => {
+    e.evt.preventDefault();
+    e.evt.stopPropagation();
     let startX = e.evt.pageX;
     let startY = e.evt.pageY;
     setIsDragging(true);
@@ -32,7 +38,7 @@ export default function Handle({
       const movedY = startY - e.pageY;
       onDrag({
         ...handle,
-        points: [movedX, movedY],
+        args: [movedX, movedY],
       });
     };
     const onUp = () => {
@@ -68,26 +74,33 @@ export default function Handle({
     stage.container().style.cursor = "default";
   };
 
+  const colors = {
+    quadraticBezierPoint: "blue",
+    quadraticBezier: "pink",
+  };
+
   const props = {
+    // @ts-ignore
     stroke: isHover ? "#3b82f6" : "#9ca3af",
     strokeWidth: 1,
-    x: handle.points[0],
-    y: handle.points[1],
-    fill: "white",
+    x: handle.args[0],
+    y: handle.args[1],
+    fill: isSelected ? "#e11d48" : "white",
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
   };
+
   return (
     <>
-      {handle.type == "quadraticBezier" && (
+      {handle.command === "quadraticCurveToCP" && (
         <Group>
           <Line
             points={[
-              handles[index - 1].points[0],
-              handles[index - 1].points[1],
-              handles[index].points[0],
-              handles[index].points[1],
+              handles[index - 1].args[0],
+              handles[index - 1].args[1],
+              handle.args[0],
+              handle.args[1],
             ]}
             strokeWidth={1}
             stroke={"#b91c1c"}
@@ -96,10 +109,10 @@ export default function Handle({
 
           <Line
             points={[
-              handles[index + 1].points[0],
-              handles[index + 1].points[1],
-              handles[index].points[0],
-              handles[index].points[1],
+              handles[index + 1].args[0],
+              handles[index + 1].args[1],
+              handles[index].args[0],
+              handles[index].args[1],
             ]}
             strokeWidth={1}
             stroke={"#b91c1c"}
@@ -108,13 +121,13 @@ export default function Handle({
         </Group>
       )}
 
-      {handle.type === "cubicBezier1" && (
+      {handle.command === "bezierCurveToCP2" && (
         <Line
           points={[
-            handles[index - 1].points[0],
-            handles[index - 1].points[1],
-            handles[index].points[0],
-            handles[index].points[1],
+            handles[index - 1].args[0],
+            handles[index - 1].args[1],
+            handles[index].args[0],
+            handles[index].args[1],
           ]}
           strokeWidth={1}
           stroke={"#b91c1c"}
@@ -122,13 +135,13 @@ export default function Handle({
         />
       )}
 
-      {handle.type === "cubicBezier2" && (
+      {handle.command === "bezierCurveToCP1" && (
         <Line
           points={[
-            handles[index + 1].points[0],
-            handles[index + 1].points[1],
-            handles[index].points[0],
-            handles[index].points[1],
+            handles[index + 1].args[0],
+            handles[index + 1].args[1],
+            handles[index].args[0],
+            handles[index].args[1],
           ]}
           strokeWidth={1}
           stroke={"#b91c1c"}
@@ -136,18 +149,20 @@ export default function Handle({
         />
       )}
 
-      {handle.type !== "point" && <Circle {...props} radius={4} />}
-      {handle.type === "point" && (
+      {!["lineTo", "moveTo"].includes(handle.command) && (
+        <Circle {...props} radius={4} />
+      )}
+      {["lineTo", "moveTo"].includes(handle.command) && (
         <Rect
           {...props}
           x={props.x}
           y={props.y}
           width={8}
           height={8}
-          fill={isHover ? "#fef08a" : "#bef264"}
           rotation={40}
           offsetX={4}
           offsetY={4}
+          onClick={onSelect}
         />
       )}
     </>
