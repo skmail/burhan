@@ -50,7 +50,7 @@ export default function Handle({
       onDragEnd();
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
-      setIsDraggingStarted(false)
+      setTimeout(() => setIsDraggingStarted(false), 400);
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
