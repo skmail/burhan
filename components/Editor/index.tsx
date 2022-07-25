@@ -278,7 +278,8 @@ export default function Editor({
                   ),
                   scale,
                   scaleWithoutZoom,
-                  settings.snapToGrid ? settings.gridSize : 0
+                  settings.snapToGrid ? settings.gridSize : 0,
+                  settings.snapToOtherPoints
                 );
 
                 if (snapped.command !== "none" && snapped.fromPoints) {

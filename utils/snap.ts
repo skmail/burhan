@@ -19,7 +19,8 @@ export default function snap(
   points: Command[],
   scale: number = 1,
   zoom: number = 1,
-  gridSize: number
+  gridSize: number,
+  snapToOtherPoints: boolean
 ): Result {
   let result: Result = {
     command: "none",
@@ -35,45 +36,53 @@ export default function snap(
     }
   > = {};
 
-  for (let point of points) {
-    if (point.id === handle.id) {
-      console.log("termninated by same point");
-      continue;
-    }
-    if (point.args[0] === handle.args[0] && point.args[1] === handle.args[1]) {
-      console.log("terminated by dims");
-      continue;
-    }
+  if (snapToOtherPoints) {
+    for (let point of points) {
+      if (point.id === handle.id) {
+        console.log("termninated by same point");
+        continue;
+      }
+      if (
+        point.args[0] === handle.args[0] &&
+        point.args[1] === handle.args[1]
+      ) {
+        console.log("terminated by dims");
+        continue;
+      }
 
-    const isStrictHorizontal = ["width", "x"].includes(point.command);
-    const isHorizontal =
-      isStrictHorizontal ||
-      [
-        "moveTo",
-        "lineTo",
-        "quadraticCurveTo",
-        "quadraticCurveToCP",
-        "bezierCurveTo",
-        "bezierCurveToCP1",
-        "bezierCurveToCP2",
-      ].includes(point.command);
+      const isStrictHorizontal = ["width", "x"].includes(point.command);
+      const isHorizontal =
+        isStrictHorizontal ||
+        [
+          "moveTo",
+          "lineTo",
+          "quadraticCurveTo",
+          "quadraticCurveToCP",
+          "bezierCurveTo",
+          "bezierCurveToCP1",
+          "bezierCurveToCP2",
+        ].includes(point.command);
 
-    if (isHorizontal && inRange(handle.args[0], point.args[0], scale)) {
-      result.command = point.command;
-      result.args[0] = point.args[0];
-      fromPoints.x = {
-        command: point.command,
-        args: [point.args[0], point.args[1]],
-      };
-    }
+      if (isHorizontal && inRange(handle.args[0], point.args[0], scale)) {
+        result.command = point.command;
+        result.args[0] = point.args[0];
+        fromPoints.x = {
+          command: point.command,
+          args: [point.args[0], point.args[1]],
+        };
+      }
 
-    if (!isStrictHorizontal && inRange(handle.args[1], point.args[1], scale)) {
-      result.command = point.command;
-      result.args[1] = point.args[1];
-      fromPoints.y = {
-        command: point.command,
-        args: [point.args[0], point.args[1]],
-      };
+      if (
+        !isStrictHorizontal &&
+        inRange(handle.args[1], point.args[1], scale)
+      ) {
+        result.command = point.command;
+        result.args[1] = point.args[1];
+        fromPoints.y = {
+          command: point.command,
+          args: [point.args[0], point.args[1]],
+        };
+      }
     }
   }
 

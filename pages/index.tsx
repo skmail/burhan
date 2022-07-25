@@ -67,6 +67,7 @@ const Home: NextPage = () => {
   const [settings, setSettings] = useState<Settings>({
     gridSize: 20,
     snapToGrid: true,
+    snapToOtherPoints: true,
   });
 
   const queryClient = useQueryClient();
@@ -313,22 +314,35 @@ const Home: NextPage = () => {
               type="number"
             />
           </div>
-          <div>
-            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-              <input
-                className="mr-2"
-                onChange={(e) => {
-                  setSettings((settings) => ({
-                    ...settings,
-                    snapToGrid: e.target.checked,
-                  }));
-                }}
-                type="checkbox"
-                checked={settings.snapToGrid}
-              />
-              <span className="-mt-0.5">Snap to grid</span>
-            </label>
-          </div>
+          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+            <input
+              className="mr-2"
+              onChange={(e) => {
+                setSettings((settings) => ({
+                  ...settings,
+                  snapToGrid: e.target.checked,
+                }));
+              }}
+              type="checkbox"
+              checked={settings.snapToGrid}
+            />
+            <span className="-mt-0.5">Snap to grid</span>
+          </label>
+
+          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+            <input
+              className="mr-2"
+              onChange={(e) => {
+                setSettings((settings) => ({
+                  ...settings,
+                  snapToOtherPoints: e.target.checked,
+                }));
+              }}
+              type="checkbox"
+              checked={settings.snapToOtherPoints}
+            />
+            <span className="-mt-0.5">Snap to other points</span>
+          </label>
         </div>
       </Transition>
 

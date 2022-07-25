@@ -63,4 +63,5 @@ export interface Font {
 export interface Settings {
   gridSize: number;
   snapToGrid: boolean;
+  snapToOtherPoints: boolean;
 }
