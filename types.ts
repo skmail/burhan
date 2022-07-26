@@ -18,7 +18,8 @@ export interface Bounds {
   x: number;
   y: number;
 }
-export interface Command {
+
+export type Command = {
   command:
     | "moveTo"
     | "lineTo"
@@ -28,10 +29,9 @@ export interface Command {
     | "bezierCurveToCP1"
     | "bezierCurveToCP2"
     | "closePath";
-
-  args: number[];
+  args: PointTuple;
   id: string;
-}
+};
 
 export interface Path {
   commands: Table<Command>;
@@ -65,4 +65,5 @@ export interface Settings {
   snapToGrid: boolean;
   snapToOtherPoints: boolean;
   viewMode: "outline" | "solid";
+  vectorMirrorType: "none" | "angle" | "angleLength";
 }

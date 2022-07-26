@@ -1,4 +1,5 @@
-import { Command } from "../types";
+import { Command, PointTuple } from "../types";
+const round = (value: number) => Math.round(value * 100) / 100;
 
 export default function computePathCommands(
   commands: Command[],
@@ -6,20 +7,18 @@ export default function computePathCommands(
   y = 0,
   scale = 1,
   scaleX = scale
-) {
+): Command[] {
   return commands.map((command) => {
-    let args = command.args;
-
-    if (args.length) {
-      args = [x + args[0] * scaleX, y + -args[1] * scale];
+    if (command.command === "closePath") {
+      return command;
     }
-
+    const args: PointTuple = [
+      round(x + command.args[0] * scaleX),
+      round(y + -command.args[1] * scale),
+    ];
     return {
       ...command,
-      args: args.map((arg) => {
-        arg = Math.round(arg * 100) / 100;
-        return arg;
-      }),
+      args,
     };
   });
 }

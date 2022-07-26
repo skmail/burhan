@@ -1,10 +1,35 @@
 import { parse, Node, RootNode } from "svg-parser";
 import svgPath from "svgpath";
-import { Command } from "../types";
+import { Command, PointTuple } from "../types";
+import { Bezier } from "bezier-js";
+
+const add = (
+  points: [number, number, number, number, number, number],
+  result: any
+) => {
+  result.push({
+    id: String(Math.random()),
+    command: "bezierCurveToCP1",
+    //@ts-ignore
+    args: [points[0], points[1]],
+  });
+  result.push({
+    id: String(Math.random()),
+    command: "bezierCurveToCP2",
+    //@ts-ignore
+    args: [points[2], points[3]],
+  });
+  result.push({
+    id: String(Math.random()),
+    command: "bezierCurveTo",
+    //@ts-ignore
+    args: [points[4], points[5]],
+  });
+};
 
 const scanForPaths = (node: Node | RootNode) => {
   let results: string[] = [];
-  console.log(node);
+
   if (node.type !== "root" && node.type !== "element") {
     return [];
   }
@@ -23,6 +48,7 @@ const scanForPaths = (node: Node | RootNode) => {
 
   return results;
 };
+
 export default function parseRawSvg(
   svg: string,
   baseWidth: number,
@@ -32,104 +58,101 @@ export default function parseRawSvg(
 
   const result = scanForPaths(parsed).map((p) => {
     const result: Command[] = [];
-
-    const path = svgPath(p).abs().unshort();
+    const path = svgPath(p).abs().unshort().unarc();
 
     const bounds = [Infinity, Infinity, -Infinity, -Infinity];
     path.iterate((segment) => {
       const [command, ...points] = segment;
+      let pts = points;
       for (var j = 0; j < points.length; j += 2) {
-        if (points[j + 0] < bounds[0]) bounds[0] = points[j + 0];
-        if (points[j + 1] < bounds[1]) bounds[1] = points[j + 1];
-        if (points[j + 0] > bounds[2]) bounds[2] = points[j + 0];
-        if (points[j + 1] > bounds[3]) bounds[3] = points[j + 1];
+        if (pts[j + 0] < bounds[0]) bounds[0] = pts[j + 0];
+        if (pts[j + 1] < bounds[1]) bounds[1] = pts[j + 1];
+        if (pts[j + 0] > bounds[2]) bounds[2] = pts[j + 0];
+        if (pts[j + 1] > bounds[3]) bounds[3] = pts[j + 1];
       }
     });
 
     let [left, top, right, bottom] = bounds;
 
-    const sx = baseWidth / (right - left);
-    const sy = baseHeight / (bottom - top);
+    const width = right - left;
+    const height = bottom - top;
+    let sx = baseWidth / width;
+    let sy = baseHeight / height;
+    const scale = Math.min(sx, sy);
 
-    path.scale(sx, sy).iterate((segment) => {
-      const [command, ...args] = segment;
+    path
+      .translate(-left, -top)
+      .scale(scale, -scale)
+      .translate(0, height * scale)
+      .iterate((segment, index, x, y) => {
+        const [command, ...args] = segment;
 
-      const id = String(Math.random());
+        const id = String(Math.random());
 
-      switch (command) {
-        case "M":
-          result.push({
-            id,
-            command: "moveTo",
-            args,
-          });
-          break;
-        case "L":
-          result.push({
-            id,
-            command: "lineTo",
-            args,
-          });
-          break;
+        switch (command) {
+          case "M":
+            result.push({
+              id,
+              command: "moveTo",
+              args: args as PointTuple,
+            });
+            break;
+          case "L":
+            result.push({
+              id,
+              command: "lineTo",
+              args: args as PointTuple,
+            });
+            break;
 
-        case "H":
-          result.push({
-            id,
-            command: "lineTo",
-            //@ts-ignore
-            args: [args[0], result[result.length - 1].args[1]],
-          });
-          break;
-        case "V":
-          result.push({
-            id,
-            command: "lineTo",
-            //@ts-ignore
-            args: [result[result.length - 1].args[0], args[0]],
-          });
-          break;
-        case "C":
-          result.push({
-            id: String(Math.random()),
-            command: "bezierCurveToCP1",
-            //@ts-ignore
-            args: [args[0], args[1]],
-          });
-          result.push({
-            id: String(Math.random()),
-            command: "bezierCurveToCP2",
-            //@ts-ignore
-            args: [args[2], args[3]],
-          });
-          result.push({
-            id: String(Math.random()),
-            command: "bezierCurveTo",
-            //@ts-ignore
-            args: [args[4], args[4]],
-          });
-          break;
+          case "H":
+            result.push({
+              id,
+              command: "lineTo",
+              //@ts-ignore
+              args: [args[0], result[result.length - 1].args[1]],
+            });
+            break;
+          case "V":
+            result.push({
+              id,
+              command: "lineTo",
+              //@ts-ignore
+              args: [result[result.length - 1].args[0], args[0]],
+            });
+            break;
+          case "C":
+            add(
+              args as [number, number, number, number, number, number],
+              result
+            );
+            break;
 
-        case "Q":
-          result.push({
-            id: String(Math.random()),
-            command: "quadraticCurveToCP",
-            //@ts-ignore
-            args: [args[0], args[1]],
-          });
-          result.push({
-            id: String(Math.random()),
-            command: "quadraticCurveTo",
-            //@ts-ignore
-            args: [args[2], args[3]],
-          });
-          break;
-      }
-    });
-
-    console.log(path);
-    console.log(result);
+          case "Q":
+            result.push({
+              id: String(Math.random()),
+              command: "quadraticCurveToCP",
+              //@ts-ignore
+              args: [args[0], args[1]],
+            });
+            result.push({
+              id: String(Math.random()),
+              command: "quadraticCurveTo",
+              //@ts-ignore
+              args: [args[2], args[3]],
+            });
+            break;
+          case "Z":
+            result.push({
+              id,
+              command: "closePath",
+              args: [] as any,
+            });
+            break;
+        }
+      });
     return result;
   });
 
-  return result[0];
+  return result.reduce((acc, points) => [...acc, ...points], [] as Command[]);
 }

@@ -71,6 +71,7 @@ const Home: NextPage = () => {
     snapToGrid: true,
     snapToOtherPoints: true,
     viewMode: "outline",
+    vectorMirrorType: "none",
   });
 
   const queryClient = useQueryClient();
@@ -233,8 +234,8 @@ const Home: NextPage = () => {
                   reader.onload = () => {
                     const result = parseRawSvg(
                       String(reader.result),
-                      glyph.bbox.width,
-                      glyph.bbox.height
+                      glyph.advanceWidth,
+                      font.capHeight
                     );
 
                     // result
@@ -437,6 +438,27 @@ const Home: NextPage = () => {
             />
             <span className="-mt-0.5">Snap to other points</span>
           </label>
+
+          <div>
+            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+              Vector mirror
+            </label>
+            <select
+              className="p-1 text-sm rounded-md border border-gray-300"
+              value={settings.vectorMirrorType}
+              onChange={(e) => {
+                setSettings((settings) => ({
+                  ...settings,
+                  vectorMirrorType: e.target
+                    .value as Settings["vectorMirrorType"],
+                }));
+              }}
+            >
+              <option value="none">None</option>
+              <option value="angle">Angle</option>
+              <option value="angleLength">Angle and length</option>
+            </select>
+          </div>
         </div>
       </Transition>
 

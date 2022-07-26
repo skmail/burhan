@@ -37,8 +37,9 @@ export default function Handle({
       setIsDraggingStarted(true);
       e.preventDefault();
       e.stopPropagation();
-      const movedX = e.pageX - startX;
-      const movedY = startY - e.pageY;
+      const movedX = e.clientX - startX;
+      const movedY = startY - e.clientY;
+
       onDrag({
         ...handle,
         args: [movedX, movedY],
@@ -89,7 +90,14 @@ export default function Handle({
     strokeWidth: 1,
     x: handle.args[0],
     y: handle.args[1],
-    fill: isSelected ? "#e11d48" : "white",
+    fill: isSelected
+      ? "#e11d48"
+      : handle.command === "bezierCurveTo"
+      ? "yellow"
+      : handle.command === "bezierCurveToCP1"
+      ? "blue"
+      : "white",
+
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
@@ -104,10 +112,10 @@ export default function Handle({
         <Group>
           <Line
             points={[
-              handles[index - 1].args[0],
-              handles[index - 1].args[1],
               handle.args[0],
               handle.args[1],
+              handles[index - 1].args[0],
+              handles[index - 1].args[1],
             ]}
             strokeWidth={1}
             stroke={"#b91c1c"}
@@ -116,10 +124,10 @@ export default function Handle({
 
           <Line
             points={[
-              handles[index + 1].args[0],
-              handles[index + 1].args[1],
               handles[index].args[0],
               handles[index].args[1],
+              handles[index + 1].args[0],
+              handles[index + 1].args[1],
             ]}
             strokeWidth={1}
             stroke={"#b91c1c"}
@@ -128,25 +136,11 @@ export default function Handle({
         </Group>
       )}
 
-      {handle.command === "bezierCurveToCP2" && (
-        <Line
-          points={[
-            handles[index - 2].args[0],
-            handles[index - 2].args[1],
-            handles[index].args[0],
-            handles[index].args[1],
-          ]}
-          strokeWidth={1}
-          stroke={"#b91c1c"}
-          dash={[4, 4]}
-        />
-      )}
-
       {handle.command === "bezierCurveToCP1" && (
         <Line
           points={[
-            handles[index + 2].args[0],
-            handles[index + 2].args[1],
+            handles[index - 1].args[0],
+            handles[index - 1].args[1],
             handles[index].args[0],
             handles[index].args[1],
           ]}
@@ -156,21 +150,21 @@ export default function Handle({
         />
       )}
 
-      {!["lineTo", "moveTo"].includes(handle.command) && (
-        <Circle {...props} radius={4} />
-      )}
-      {["lineTo", "moveTo"].includes(handle.command) && (
-        <Rect
-          {...props}
-          x={props.x}
-          y={props.y}
-          width={8}
-          height={8}
-          rotation={40}
-          offsetX={4}
-          offsetY={4}
+      {handle.command === "bezierCurveToCP2" && (
+        <Line
+          points={[
+            handles[index].args[0],
+            handles[index].args[1],
+            handles[index + 1].args[0],
+            handles[index + 1].args[1],
+          ]}
+          strokeWidth={1}
+          stroke={"#b91c1c"}
+          dash={[4, 4]}
         />
       )}
+
+      <Circle {...props} radius={4} />
     </>
   );
 }

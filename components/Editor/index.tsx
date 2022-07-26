@@ -13,7 +13,7 @@ import commandsToPath from "../../utils/commandsToPathData";
 import Metrics from "./Metrics";
 import computePathCommands from "../../utils/computePathCommands";
 import Handles from "./Handles";
-import { ArrowsExpandIcon, MinusIcon, PlusIcon } from "@heroicons/react/solid";
+import { MinusIcon, PlusIcon } from "@heroicons/react/solid";
 import PanningArea from "./PanningArea";
 import snap from "../../utils/snap";
 import Guideline from "./Guideline";
@@ -26,6 +26,10 @@ import {
   HistoryCommandUpdate,
   HistoryManager,
 } from "../../types/History";
+import reflect from "../../utils/reflect";
+import useFresh from "../../hooks/useFresh";
+import computeAngle from "../../utils/computeAngle";
+import computeDistance from "../../utils/computeDistance";
 
 interface Props {
   font: Omit<Font, "glyphs">;
@@ -190,6 +194,7 @@ export default function Editor({
     HistoryCommandUpdate | HistoryCommandsUpdate
   >();
 
+  const getFreshCommands = useFresh(glyph.path.commands);
   return (
     <div
       className="bg-gray-100 relative"
@@ -216,7 +221,6 @@ export default function Editor({
               fill="currentColor"
               className="w-5 h-5"
               xmlns="http://www.w3.org/2000/svg"
-              
             >
               <path d="M18 12h2V4h-8v2h6v6ZM4 20h8v-2H6v-6H4v8Z" />
               <path d="M22 24H2a2.002 2.002 0 0 1-2-2V2a2.002 2.002 0 0 1 2-2h20a2.002 2.002 0 0 1 2 2v20a2.002 2.002 0 0 1-2 2ZM2 2v20h20.001L22 2H2Z" />
@@ -270,7 +274,7 @@ export default function Editor({
 
           <Group opacity={1}>
             <Path
-              data={data}
+              data={data + " z"}
               strokeWidth={settings.viewMode === "outline" ? 2 : 0}
               stroke="#3b82f6"
               fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
@@ -282,7 +286,39 @@ export default function Editor({
               handles={handles}
               selectedHandles={selectedHandles}
               onDrag={(handle) => {
-                const command = glyph.path.commands.items[handle.id];
+                const commands = glyph.path.commands;
+                const freshCommands = getFreshCommands();
+
+                const selections = selectedHandlesRef.current.reduce(
+                  (acc, id) => {
+                    if (acc.includes(id)) {
+                      return acc;
+                    }
+                    const command = commands.items[id];
+                    acc.push(id);
+                    const index = commands.ids.indexOf(command.id);
+                    if (command.command === "bezierCurveTo") {
+                      acc.push(
+                        commands.ids[index + 1],
+                        commands.ids[index - 1]
+                      );
+                    } else if (command.command === "lineTo") {
+                      const nextPoint = commands.items[commands.ids[index + 1]];
+                      if (
+                        nextPoint &&
+                        nextPoint.command === "bezierCurveToCP1"
+                      ) {
+                        acc.push(nextPoint.id);
+                      }
+                    }
+
+                    return acc;
+                  },
+                  [] as string[]
+                );
+
+                const command = commands.items[handle.id];
+
                 const amountToMove = [
                   handle.args[0] / scale,
                   handle.args[1] / scale,
@@ -299,7 +335,7 @@ export default function Editor({
                     args: xy,
                   },
                   (points as any).filter(
-                    (p: any) => !selectedHandlesRef.current.includes(p.id)
+                    (p: any) => !selections.includes(p.id)
                   ),
                   scale,
                   scaleWithoutZoom,
@@ -330,65 +366,116 @@ export default function Editor({
 
                 xy = snapped.args;
 
-                if (selectedHandlesRef.current.length > 1) {
-                  const newHandles = selectedHandlesRef.current.reduce(
-                    (acc, id) => {
-                      const cmd = glyph.path.commands.items[id] as Command;
-                      let args: PointTuple;
-                      if (id === handle.id) {
-                        args = xy;
-                      } else {
-                        args = [
-                          cmd.args[0] + amountToMove[0] + snapDiff[0],
-                          cmd.args[1] + amountToMove[1] + snapDiff[1],
-                        ];
-                      }
-                      return {
-                        ...acc,
-                        [id]: {
-                          ...cmd,
-                          args,
-                        },
-                      };
-                    },
-                    {} as Record<string, Command>
-                  );
+                const newHandles = selections.reduce((acc, id) => {
+                  if (acc[id]) {
+                    return acc;
+                  }
+                  const cmd = commands.items[id];
+                  let args: PointTuple;
+                  if (id === handle.id) {
+                    args = xy;
+                  } else {
+                    args = [
+                      cmd.args[0] + amountToMove[0] + snapDiff[0],
+                      cmd.args[1] + amountToMove[1] + snapDiff[1],
+                    ];
+                  }
 
-                  onCommandsUpdate(newHandles);
-
-                  console.log(pendingDragHistory.current?.payload);
-                  pendingDragHistory.current = {
-                    type: "commands.update",
-                    payload: {
-                      old: pendingDragHistory.current
-                        ? pendingDragHistory.current.payload.old
-                        : selectedHandles.reduce(
-                            (acc, id) => ({
-                              ...acc,
-                              [id]: glyph.path.commands.items[id],
-                            }),
-                            {} as Record<string, Command>
-                          ),
-                      new: newHandles,
-                    },
-                  } as HistoryCommandsUpdate;
-                } else {
-                  const cmd: Command = {
-                    ...command,
-                    args: xy,
+                  acc[id] = {
+                    ...cmd,
+                    args,
                   };
-                  onCommandUpdate(cmd);
-                  pendingDragHistory.current = {
-                    type: "command.update",
-                    payload: {
-                      //@ts-ignore
-                      old: pendingDragHistory.current
-                        ? pendingDragHistory.current.payload.old
-                        : command,
-                      new: cmd,
-                    },
-                  } as HistoryCommandUpdate;
-                }
+
+                  const getPoint = (
+                    index1: number,
+                    index2: number,
+                    commands: Font["glyphs"]["items"]["0"]["path"]["commands"],
+                    type: Command["command"],
+                    args: PointTuple,
+                    mirrorType: Settings["vectorMirrorType"]
+                  ): Command | undefined => {
+                    const pointId = commands.ids[index1];
+                    let point = acc[pointId] || commands.items[pointId];
+                    const nextPointId = commands.ids[index2];
+                    let nextPoint = commands.items[nextPointId];
+
+                    if (nextPoint.command === type) {
+                      if (mirrorType === "angleLength") {
+                        args = reflect(args, point.args);
+                      } else if (mirrorType === "angle") {
+                        const angle = computeAngle(point.args, args);
+
+                        const d = computeDistance(point.args, nextPoint.args);
+
+                        const xx = point.args[0] + d * Math.cos(angle);
+                        const yy = point.args[1] + d * Math.sin(angle);
+
+                        args = [xx, yy];
+
+                        args = reflect(args, point.args, nextPoint.args);
+                      } else {
+                        return;
+                      }
+
+                      return {
+                        ...nextPoint,
+                        args,
+                      };
+                    }
+                  };
+
+                  const index = commands.ids.indexOf(cmd.id);
+
+                  if (cmd.command === "bezierCurveToCP1") {
+                    const nextPoint = getPoint(
+                      index - 1,
+                      index - 2,
+                      freshCommands,
+                      "bezierCurveToCP2",
+                      args,
+                      settings.vectorMirrorType
+                    );
+
+                    if (nextPoint) {
+                      acc[nextPoint.id] = nextPoint;
+                    }
+                  }
+
+                  if (cmd.command === "bezierCurveToCP2") {
+                    const nextPoint = getPoint(
+                      index + 1,
+                      index + 2,
+                      freshCommands,
+                      "bezierCurveToCP1",
+                      args,
+                      settings.vectorMirrorType
+                    );
+
+                    if (nextPoint) {
+                      acc[nextPoint.id] = nextPoint;
+                    }
+                  }
+
+                  return acc;
+                }, {} as Record<string, Command>);
+
+                onCommandsUpdate(newHandles);
+
+                pendingDragHistory.current = {
+                  type: "commands.update",
+                  payload: {
+                    old: pendingDragHistory.current
+                      ? pendingDragHistory.current.payload.old
+                      : Object.keys(newHandles).reduce(
+                          (acc, id) => ({
+                            ...acc,
+                            [id]: glyph.path.commands.items[id],
+                          }),
+                          {} as Record<string, Command>
+                        ),
+                    new: newHandles,
+                  },
+                } as HistoryCommandsUpdate;
               }}
               onDragEnd={() => {
                 setGuidelines([]);
@@ -442,8 +529,11 @@ export default function Editor({
           })}
 
           <Preview
-          viewMode={settings.viewMode === "outline" ? "solid" :"outline"}
-          glyph={glyph} commands={commandsArray} font={font} />
+            viewMode={settings.viewMode}
+            glyph={glyph}
+            commands={commandsArray}
+            font={font}
+          />
         </Layer>
       </Stage>
     </div>
