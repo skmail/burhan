@@ -15,35 +15,35 @@ import { Transition } from "@headlessui/react";
 import Button from "../components/Button";
 import { Settings } from "../types";
 import useHistory from "../hooks/useHistory";
-import { History } from "../types/History";
+import parseRawSvg from "../utils/parseRawSvg";
 
 const Editor = dynamic(() => import("../components/Editor"), { ssr: false });
 
+const normalize = <T extends { id: string }>(
+  data: T[],
+  itemUpdater?: (item: T) => T
+) => {
+  return data.reduce(
+    (acc, item) => {
+      acc.ids.push(item.id);
+
+      if (itemUpdater) {
+        item = itemUpdater(item);
+      }
+
+      acc.items[item.id] = item;
+
+      return acc;
+    },
+    {
+      ids: [] as string[],
+      items: {} as Record<string, T>,
+    }
+  );
+};
+
 const getFont = async ({ queryKey }: any) => {
   const response = await axios.get(`/fonts/${queryKey[1]}.json`);
-
-  const normalize = <T extends { id: string }>(
-    data: T[],
-    itemUpdater?: (item: T) => T
-  ) => {
-    return data.reduce(
-      (acc, item) => {
-        acc.ids.push(item.id);
-
-        if (itemUpdater) {
-          item = itemUpdater(item);
-        }
-
-        acc.items[item.id] = item;
-
-        return acc;
-      },
-      {
-        ids: [] as string[],
-        items: {} as Record<string, T>,
-      }
-    );
-  };
 
   return {
     ...response.data,
@@ -70,6 +70,7 @@ const Home: NextPage = () => {
     gridSize: 20,
     snapToGrid: true,
     snapToOtherPoints: true,
+    viewMode: "outline",
   });
 
   const queryClient = useQueryClient();
@@ -182,7 +183,7 @@ const Home: NextPage = () => {
           </svg>
         </Button>
         <div className="flex space-x-2">
-          <Button onClick={history.undo} data-undo disabled={!history.canUndo}>
+          <Button onClick={history.undo} disabled={!history.canUndo}>
             <svg
               className="w-5 h-5"
               viewBox="0 0 24 22"
@@ -192,7 +193,7 @@ const Home: NextPage = () => {
               <path d="m8.687 0-8 8L0 8.719l.687.719 8 8L10.125 16 3.844 9.719h13.062c2.754 0 5 2.246 5 5v7h2v-7c0-3.844-3.156-7-7-7H3.843l6.282-6.281L8.687 0Z" />
             </svg>
           </Button>
-          <Button data-redo onClick={history.redo} disabled={!history.canRedo}>
+          <Button onClick={history.redo} disabled={!history.canRedo}>
             <svg
               className="w-5 h-5"
               viewBox="0 0 24 22"
@@ -201,6 +202,71 @@ const Home: NextPage = () => {
             >
               <path d="m15.219 0 8 8 .687.719-.687.719-8 8L13.781 16l6.281-6.281H7a5.01 5.01 0 0 0-5 5v7H0v-7c0-3.844 3.156-7 7-7h13.063l-6.282-6.281L15.219 0Z" />
             </svg>
+          </Button>
+
+          <Button
+            onClick={(e) => {
+              setSettings((settings) => ({
+                ...settings,
+                viewMode: settings.viewMode === "outline" ? "solid" : "outline",
+              }));
+            }}
+            className="uppercase"
+          >
+            {settings.viewMode}
+          </Button>
+
+          <Button className="uppercase relative overflow-hidden cursor-pointer">
+            <span className="opacity-0 inset-0 absolute cursor-pointer">
+              <input
+                onChange={(e) => {
+                  if (!e.target.files || !e.target.files.length) {
+                    return;
+                  }
+                  const file = e.target.files[0];
+
+                  if (!["image/svg+xml"].includes(file.type)) {
+                    alert("We only support SVG files.");
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const result = parseRawSvg(
+                      String(reader.result),
+                      glyph.bbox.width,
+                      glyph.bbox.height
+                    );
+
+                    // result
+
+                    if (!query.data) {
+                      return;
+                    }
+                    const data = {
+                      ...query.data,
+                      glyphs: {
+                        ...query.data.glyphs,
+                        items: {
+                          ...query.data.glyphs.items,
+                          [selected]: {
+                            ...query.data.glyphs.items[selected],
+                            path: {
+                              ...query.data.glyphs.items[selected].path,
+                              commands: normalize(result),
+                            },
+                          },
+                        },
+                      },
+                    };
+
+                    queryClient.setQueryData(["font", sample], data);
+                  };
+                  reader.readAsText(file);
+                }}
+                type="file"
+              />
+            </span>
+            Import
           </Button>
         </div>
       </div>
@@ -237,7 +303,7 @@ const Home: NextPage = () => {
               </Button>
             ))}
           </div>
-          <div className={`flex gap-4 flex-wrap p-4 h-screen  overflow-y-auto`}>
+          <div className={`flex gap-2 flex-wrap p-4 h-screen  overflow-y-auto`}>
             {glyphs.ids.map((id) => {
               const glyph = glyphs.items[id];
               return (
@@ -246,18 +312,18 @@ const Home: NextPage = () => {
                   onClick={() => {
                     setSelected(glyph.id);
                   }}
-                  className={`ring p-0.5 ${
+                  className={` p-0.5 ${
                     selected === glyph.id
-                      ? "ring-orange-500"
-                      : "ring-slate-300  hover:ring-indigo-600"
-                  } relative cursor-pointer`}
+                      ? "ring ring-sky-500"
+                      : "bg-slate-200 hover:ring hover:ring-sky-500"
+                  } relative cursor-pointer rounded`}
                 >
                   <Svg
                     metrics={false}
                     font={font}
                     glyph={glyph}
-                    width={38}
-                    height={38}
+                    width={40}
+                    height={40}
                     fill
                   />
                 </div>

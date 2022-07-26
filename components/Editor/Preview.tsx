@@ -1,5 +1,5 @@
 import { Path, Group, Rect } from "react-konva";
-import { Command, Font, PointTuple } from "../../types";
+import { Command, Font, PointTuple, Settings } from "../../types";
 import commandsToPathData from "../../utils/commandsToPathData";
 import computePathCommands from "../../utils/computePathCommands";
 
@@ -7,8 +7,9 @@ interface Props {
   glyph: Font["glyphs"]["items"][0];
   commands: Command[];
   font: Omit<Font, "glyphs">;
+  viewMode: Settings["viewMode"];
 }
-export default function Preview({ glyph, commands, font }: Props) {
+export default function Preview({ glyph, commands, font, viewMode }: Props) {
   const width = 200;
   const height = 200;
   const h = glyph.bbox.height;
@@ -36,7 +37,9 @@ export default function Preview({ glyph, commands, font }: Props) {
         data={commandsToPathData(
           computePathCommands(commands, x, baseline, scale)
         )}
-        fill="black"
+        fill={viewMode === "solid" ? "black" : undefined}
+        strokeWidth={viewMode === "outline" ? 2 : undefined}
+        stroke={viewMode === "outline" ? "black" : undefined}
       />
     </Group>
   );

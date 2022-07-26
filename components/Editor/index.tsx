@@ -211,7 +211,16 @@ export default function Editor({
               setZoom(0.9);
             }}
           >
-            <ArrowsExpandIcon className="w-5 h-5" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-5 h-5"
+              xmlns="http://www.w3.org/2000/svg"
+              
+            >
+              <path d="M18 12h2V4h-8v2h6v6ZM4 20h8v-2H6v-6H4v8Z" />
+              <path d="M22 24H2a2.002 2.002 0 0 1-2-2V2a2.002 2.002 0 0 1 2-2h20a2.002 2.002 0 0 1 2 2v20a2.002 2.002 0 0 1-2 2ZM2 2v20h20.001L22 2H2Z" />
+            </svg>
           </Button>
         )}
         <Button onClick={() => updateZoom(0.1)}>
@@ -260,7 +269,12 @@ export default function Editor({
           />
 
           <Group opacity={1}>
-            <Path data={data} strokeWidth={1} stroke="black" />
+            <Path
+              data={data}
+              strokeWidth={settings.viewMode === "outline" ? 2 : 0}
+              stroke="#3b82f6"
+              fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
+            />
             <Handles
               onSelect={(id) => {
                 onSelectHandles([id]);
@@ -427,7 +441,9 @@ export default function Editor({
             );
           })}
 
-          <Preview glyph={glyph} commands={commandsArray} font={font} />
+          <Preview
+          viewMode={settings.viewMode === "outline" ? "solid" :"outline"}
+          glyph={glyph} commands={commandsArray} font={font} />
         </Layer>
       </Stage>
     </div>

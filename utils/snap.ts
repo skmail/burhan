@@ -86,16 +86,19 @@ export default function snap(
     }
   }
 
-  const guidelines = Object.values(fromPoints).filter(Boolean);
+  const grid = gridSize / zoom;
 
-  if (!guidelines.length && gridSize) {
-    const grid = gridSize / zoom;
-
+  if (!fromPoints.x && gridSize) {
     const roundedX = Math.round(result.args[0] / grid) * grid;
-    const roundedY = Math.round(result.args[1] / grid) * grid;
     result.args[0] = roundedX;
+  }
+
+  if (!fromPoints.y && gridSize) {
+    const roundedY = Math.round(result.args[1] / grid) * grid;
     result.args[1] = roundedY;
   }
+
+  const guidelines = Object.values(fromPoints).filter(Boolean);
   return {
     ...result,
     fromPoints: guidelines,

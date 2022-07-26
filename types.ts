@@ -64,5 +64,5 @@ export interface Settings {
   gridSize: number;
   snapToGrid: boolean;
   snapToOtherPoints: boolean;
+  viewMode: "outline" | "solid";
 }
-

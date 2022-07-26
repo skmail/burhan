@@ -18,12 +18,14 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-konva": "^18.2.1",
+    "svg-parser": "^2.0.4",
     "svgpath": "^2.5.0"
   },
   "devDependencies": {
     "@types/node": "18.0.6",
     "@types/react": "18.0.15",
     "@types/react-dom": "18.0.6",
+    "@types/svg-parser": "^2.0.3",
     "autoprefixer": "^10.4.7",
     "eslint": "8.20.0",
     "eslint-config-next": "12.2.3",

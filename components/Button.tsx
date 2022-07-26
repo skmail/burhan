@@ -10,7 +10,8 @@ export default function Button({
   let cls = "";
 
   if (variant === "primary") {
-    cls = "bg-white text-gray-600 enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50";
+    cls =
+      "bg-white text-gray-600 enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50";
   } else {
     cls = "bg-blue-500 text-white hover:ring hover:ring-gray-300 shadow ";
   }
@@ -18,7 +19,7 @@ export default function Button({
   return (
     <button
       {...props}
-      className={`w-8 h-8 rounded flex items-center justify-center ${className} ${cls}`}
+      className={`h-8  px-1.5 rounded flex items-center justify-center ${className} ${cls}`}
     />
   );
 }
