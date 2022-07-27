@@ -7,6 +7,12 @@ interface Box {
   height: number;
 }
 
+export interface Point {
+  x: number;
+  y: number;
+  t?: number;
+}
+
 export type OnHandleDrag = (handle: Command) => void;
 export type OnCommandUpdate = (command: Command) => void;
 export type onCommandsUpdate = (commands: Record<string, Command>) => void;

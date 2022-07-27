@@ -16,6 +16,8 @@ import Button from "../components/Button";
 import { Settings } from "../types";
 import useHistory from "../hooks/useHistory";
 import parseRawSvg from "../utils/parseRawSvg";
+import makeCubicPayload from "../utils/makeCubicPayload";
+import quadraticToQubic from "../utils/quadraticToCubic";
 
 const Editor = dynamic(() => import("../components/Editor"), { ssr: false });
 
@@ -52,7 +54,30 @@ const getFont = async ({ queryKey }: any) => {
         ...glyph,
         path: {
           ...glyph.path,
-          commands: normalize(glyph.path.commands),
+          commands: normalize(
+            glyph.path.commands.reduce(
+              (acc: Command[], command: Command, index: number) => {
+                if (command.command === "quadraticCurveTo") {
+                  return acc;
+                } else if (command.command == "quadraticCurveToCP") {
+                  acc.push(
+                    ...makeCubicPayload(
+                      quadraticToQubic(acc[acc.length - 1].args, [
+                        command.args[0],
+                        command.args[1],
+                        glyph.path.commands[index + 1].args[0],
+                        glyph.path.commands[index + 1].args[1],
+                      ])
+                    )
+                  );
+                } else {
+                  acc.push(command);
+                }
+                return acc;
+              },
+              [] as Command[]
+            )
+          ),
         },
       };
     }),
@@ -339,6 +364,40 @@ const Home: NextPage = () => {
             history={history}
             settings={settings}
             forceUpdate={forceUpdater}
+            onCommandsAdd={(
+              table: Font["glyphs"]["items"]["0"]["path"]["commands"]
+            ) => {
+              if (!query.data) {
+                return;
+              }
+              const data = {
+                ...query.data,
+                glyphs: {
+                  ...query.data.glyphs,
+                  items: {
+                    ...query.data.glyphs.items,
+                    [selected]: {
+                      ...query.data.glyphs.items[selected],
+                      path: {
+                        ...query.data.glyphs.items[selected].path,
+
+                        commands: {
+                          ...query.data.glyphs.items[selected].path.commands,
+                          ids: table.ids,
+                          items: {
+                            ...query.data.glyphs.items[selected].path.commands
+                              .items,
+                            ...table.items,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              };
+
+              queryClient.setQueryData(["font", sample], data);
+            }}
             onCommandsUpdate={(commands) => {
               updateCommands(commands);
             }}

@@ -1,31 +1,8 @@
 import { parse, Node, RootNode } from "svg-parser";
 import svgPath from "svgpath";
 import { Command, PointTuple } from "../types";
-import { Bezier } from "bezier-js";
-
-const add = (
-  points: [number, number, number, number, number, number],
-  result: any
-) => {
-  result.push({
-    id: String(Math.random()),
-    command: "bezierCurveToCP1",
-    //@ts-ignore
-    args: [points[0], points[1]],
-  });
-  result.push({
-    id: String(Math.random()),
-    command: "bezierCurveToCP2",
-    //@ts-ignore
-    args: [points[2], points[3]],
-  });
-  result.push({
-    id: String(Math.random()),
-    command: "bezierCurveTo",
-    //@ts-ignore
-    args: [points[4], points[5]],
-  });
-};
+import makeCubicPayload from "./makeCubicPayload";
+import quadraticToQubic from "./quadraticToCubic";
 
 const scanForPaths = (node: Node | RootNode) => {
   let results: string[] = [];
@@ -57,7 +34,7 @@ export default function parseRawSvg(
   const parsed = parse(svg);
 
   const result = scanForPaths(parsed).map((p) => {
-    const result: Command[] = [];
+    let result: Command[] = [];
     const path = svgPath(p).abs().unshort().unarc();
 
     const bounds = [Infinity, Infinity, -Infinity, -Infinity];
@@ -122,25 +99,21 @@ export default function parseRawSvg(
             });
             break;
           case "C":
-            add(
-              args as [number, number, number, number, number, number],
-              result
-            );
+            result = [
+              ...result,
+              ...makeCubicPayload(
+                args as [number, number, number, number, number, number]
+              ),
+            ];
             break;
 
           case "Q":
-            result.push({
-              id: String(Math.random()),
-              command: "quadraticCurveToCP",
-              //@ts-ignore
-              args: [args[0], args[1]],
-            });
-            result.push({
-              id: String(Math.random()),
-              command: "quadraticCurveTo",
-              //@ts-ignore
-              args: [args[2], args[3]],
-            });
+            const prev: PointTuple = result[result.length - 1].args;
+            const quad = args as [number, number, number, number];
+            result = [
+              ...result,
+              ...makeCubicPayload(quadraticToQubic(prev, quad)),
+            ];
             break;
           case "Z":
             result.push({

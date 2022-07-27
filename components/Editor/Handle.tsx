@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Circle, Line, KonvaNodeEvents, Rect, Group } from "react-konva";
+import { Circle, Line, KonvaNodeEvents, Text, Group } from "react-konva";
 
 import { Command, OnHandleDrag } from "../../types";
 
@@ -101,7 +101,9 @@ export default function Handle({
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
-    onClick: () => {
+    onClick: (e) => {
+      e.evt.preventDefault();
+      e.evt.stopPropagation();
       onSelect(!isDraggingStarted);
     },
   };
@@ -165,6 +167,14 @@ export default function Handle({
       )}
 
       <Circle {...props} radius={4} />
+
+      {/* 
+      <Text
+        fontSize={11}
+        text={`[${index}] ${Math.round(props.x)}, ${Math.round(props.y)}`}
+        x={props.x}
+        y={props.y - 14}
+      ></Text> */}
     </>
   );
 }

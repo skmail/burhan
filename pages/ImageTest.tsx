@@ -32,7 +32,7 @@ export default function ImageTest() {
           points[`${x},${y}`] = j;
         }
       }
-      console.log(points, colors);
+      // console.log(points, colors);
     };
 
     //   while (image.data[channel] != null) {

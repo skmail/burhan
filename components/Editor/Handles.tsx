@@ -33,6 +33,9 @@ export default function Handles({
       />
     );
 
+    if(!handle.args.length){
+      return acc
+    }
     if (
       ["bezierCurveTo", "moveTo", "lineTo", "quadraticCurveTo"].includes(
         handle.command

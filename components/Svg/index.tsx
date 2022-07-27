@@ -13,6 +13,7 @@ interface Props {
 }
 
 function Svg({ glyph, font, fill = false, width = 50, height = 50 }: Props) {
+
   const scale = (1 / font.unitsPerEm) * Math.min(width, height);
 
   const baseline = height / 2 + ((font.bbox.maxY + font.descent) / 2) * scale;
@@ -27,6 +28,7 @@ function Svg({ glyph, font, fill = false, width = 50, height = 50 }: Props) {
   );
   const viewBox = `0 0  ${width} ${height}`;
 
+  // console.log(data)
   return (
     <svg width={width} height={height} viewBox={viewBox}>
       <path
