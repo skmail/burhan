@@ -41,20 +41,25 @@ export default function ToOpenType({
             }}
           ></style>
 
-          <textarea
-            style={{
-              fontFamily: "'XXX'",
-            }}
-            value={testData}
-            onChange={(e) => {
-              setIsChanged(
-                e.target.value !== font.glyphs.items[selected].string
-              );
-              setTestData(e.target.value);
-            }}
-            placeholder="Test your data here"
-            className="h-24 text-2xl ring focus:outline-none ring-zinc-800 rounded p-2 shadouw  w-64 bg-white "
-          ></textarea>
+          <div className="flex flex-col items-start relative">
+            <span  className="text-sm uppercase mb-1 px-2 py-0.5 mb-2 bg-red-500 text-white absolute top-2 left-2">
+              Font testing
+            </span>
+            <textarea
+              style={{
+                fontFamily: "'XXX'",
+              }}
+              value={testData}
+              onChange={(e) => {
+                setIsChanged(
+                  e.target.value !== font.glyphs.items[selected].string
+                );
+                setTestData(e.target.value);
+              }}
+              placeholder="Test your data here"
+              className="h-24 text-2xl ring focus:outline-none ring-zinc-800 rounded p-2 shadouw  w-64 bg-white pt-9 "
+            ></textarea>
+          </div>
         </>
       )}
     </>
