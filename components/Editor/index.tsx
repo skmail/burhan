@@ -79,7 +79,7 @@ export default function Editor({
 
   const updateZoom = (value: number) => {
     setNewPoint(undefined);
-    setZoom((zoom) => Math.min(10, Math.max(zoom + value, 0.1)));
+    setZoom((zoom) => Math.min(50, Math.max(zoom + value, 0.1)));
   };
 
   useEffect(() => {
@@ -220,7 +220,7 @@ export default function Editor({
     if (!newPoint) {
       document.body.style.cursor = "";
     } else {
-      document.body.style.cursor = "url(icons/pen-add.svg), auto";
+      document.body.style.cursor = "url(/icons/pen-add.svg), auto";
     }
   }, [newPoint]);
 

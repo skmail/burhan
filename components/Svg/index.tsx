@@ -22,7 +22,6 @@ function Svg({
   bHeight,
 }: Props) {
   const scale = (1 / unitsPerEm) * Math.min(width, height);
-
   const baseline = height / 2 + (bHeight / 2) * scale;
   const x = width / 2 - (glyph.bbox.width / 2) * scale;
   const data = useMemo(() => {
