@@ -55,6 +55,7 @@ interface Glyph {
   bbox: Box;
   advanceWidth: number;
   id: string;
+  character: number
 }
 
 interface Table<T> {

@@ -18,6 +18,7 @@ import useFresh from "../../hooks/useFresh";
 import { findFont, saveFont } from "../../db/database";
 import { useRouter } from "next/router";
 import normalize from "../../utils/normalize";
+import ToOpenType from "../../components/ToOpentype";
 
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
@@ -228,7 +229,7 @@ const App: NextPage = () => {
   return (
     <div className="h-screen flex  overflow-hidden">
       <div className={`fixed bottom-2 space-y-2 z-50 left-[240px] ml-2`}>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 items-end">
           <Button onClick={history.undo} disabled={!history.canUndo}>
             <svg
               className="w-5 h-5"
@@ -262,6 +263,8 @@ const App: NextPage = () => {
             />
             Import
           </Button>
+
+          <ToOpenType selected={selected} font={query.data} />
         </div>
       </div>
 
