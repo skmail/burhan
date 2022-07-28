@@ -22,7 +22,7 @@ export default function Home() {
   });
 
   const sampleLoader = useMutation(async (id: string) => {
-    const response = await axios.get("http://localhost:8080/", {
+    const response = await axios.get("https://fonts-api.cssgears.com/", {
       params: {
         font: id,
       },
