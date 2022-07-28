@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Command, OnHandleActivate, OnHandleDrag } from "../../types";
 import Handle from "./Handle";
 
@@ -8,6 +9,7 @@ interface Props {
   onDragEnd: () => void;
   selectedHandles: string[];
   onSelect: (id: string) => void;
+  onHover: (isHover: boolean) => void;
 }
 export default function Handles({
   handles,
@@ -16,6 +18,7 @@ export default function Handles({
   selectedHandles,
   onSelect,
   onActivate,
+  onHover,
 }: Props) {
   const output = handles.reduce((acc, handle, index) => {
     const h = (
@@ -28,10 +31,9 @@ export default function Handles({
         onDragEnd={onDragEnd}
         onActivate={onActivate}
         isSelected={selectedHandles.includes(handle.id)}
-        onSelect={(deselect = false) => {
-          if (deselect || !selectedHandles.includes(handle.id)) {
-            onSelect(handle.id);
-          }
+        onHover={onHover}
+        onSelect={() => {
+          onSelect(handle.id);
         }}
       />
     );

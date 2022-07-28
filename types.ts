@@ -74,3 +74,9 @@ export interface Settings {
   viewMode: "outline" | "solid";
   vectorMirrorType: "none" | "angle" | "angleLength";
 }
+
+export interface Vector {
+  x: number;
+  y: number;
+  t?: number;
+}

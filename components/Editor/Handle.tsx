@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { Circle, Line, KonvaNodeEvents, Text, Group } from "react-konva";
+import { useEffect, useRef, useState } from "react";
+import { Circle, Line, KonvaNodeEvents, Text, Group, Rect } from "react-konva";
+import useFresh from "../../hooks/useFresh";
 
-import { Command, OnHandleActivate, OnHandleDrag } from "../../types";
+import { Command, OnHandleActivate, OnHandleDrag, Vector } from "../../types";
+import vector2 from "../../utils/vector";
 
 interface Props {
   handle: Command;
@@ -12,6 +14,8 @@ interface Props {
   isSelected?: boolean;
   onSelect: (deselect?: boolean) => void;
   onActivate: OnHandleActivate;
+
+  onHover: (isHover: boolean) => void;
 }
 
 export default function Handle({
@@ -23,41 +27,64 @@ export default function Handle({
   isSelected = false,
   onSelect,
   onActivate,
+  onHover,
 }: Props) {
   const [isHover, setIsHover] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingStarted, setIsDraggingStarted] = useState(false);
 
+  useEffect(() => {
+    onHover(isHover);
+  }, [isHover]);
+
+  const getIsSelected = useFresh(isSelected);
+  const startPosition = useRef<Vector>(vector2());
+  const getIsDraggingStarted = useFresh(isDraggingStarted);
+
+  const onMouseMove = (e: MouseEvent) => {
+    const movedX = e.clientX - startPosition.current.x;
+    const movedY = startPosition.current.y - e.clientY;
+    if (Math.abs(movedX) > 1 && Math.abs(movedY) > 1) {
+      setIsDragging(true);
+      setIsDraggingStarted(true);
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    onDrag({
+      ...handle,
+      args: [movedX, movedY],
+    });
+  };
+
+  const onMouseUp = () => {
+    if (!getIsDraggingStarted()) {
+      onSelect();
+      console.log(isDraggingStarted);
+    }
+    setIsDragging(false);
+    setIsHover(false);
+    onDragEnd();
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    setTimeout(() => setIsDraggingStarted(false), 500);
+  };
+
   const onMouseDown: KonvaNodeEvents["onMouseDown"] = (e) => {
-    onSelect();
     onActivate(handle);
     e.evt.preventDefault();
     e.evt.stopPropagation();
-    let startX = e.evt.pageX;
-    let startY = e.evt.pageY;
-    setIsDragging(true);
-    const onMove = (e: MouseEvent) => {
-      setIsDraggingStarted(true);
-      e.preventDefault();
-      e.stopPropagation();
-      const movedX = e.clientX - startX;
-      const movedY = startY - e.clientY;
 
-      onDrag({
-        ...handle,
-        args: [movedX, movedY],
-      });
-    };
-    const onUp = () => {
-      setIsDragging(false);
-      setIsHover(false);
-      onDragEnd();
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      setTimeout(() => setIsDraggingStarted(false), 400);
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    startPosition.current.x = e.evt.clientX;
+    startPosition.current.y = e.evt.clientY;
+
+    if (!getIsSelected()) {
+      onSelect();
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
   };
   const onMouseEnter: KonvaNodeEvents["onMouseEnter"] = (e) => {
     setIsHover(true);
@@ -66,7 +93,7 @@ export default function Handle({
     if (!stage) {
       return;
     }
-    stage.container().style.cursor = "pointer";
+    document.body.style.cursor = "pointer";
   };
   const onMouseLeave: KonvaNodeEvents["onMouseLeave"] = (e) => {
     if (isDragging) {
@@ -79,38 +106,32 @@ export default function Handle({
     if (!stage) {
       return;
     }
-    stage.container().style.cursor = "default";
+    document.body.style.cursor = "default";
   };
-
-  const onClick: KonvaNodeEvents["onClick"] = (e) => {
-    if (isDragging) {
-      return;
-    }
-    e.evt.preventDefault();
-    e.evt.stopPropagation();
-    onSelect(!isDraggingStarted);
-  };
-
 
   const props = {
     // @ts-ignore
-    stroke: isHover ? "#3b82f6" : "#9ca3af",
-    strokeWidth: 1,
+    stroke: isSelected
+      ? "white"
+      : isHover
+      ? "#3b82f6"
+      : handle.command === "moveTo"
+      ? "red"
+      : "#9ca3af",
+    strokeWidth: isHover ? 2 : 1,
     x: handle.args[0],
     y: handle.args[1],
-    fill: isSelected
-      ? "#e11d48"
-      : handle.command === "bezierCurveTo"
-      ? "yellow"
-      : handle.command === "bezierCurveToCP1"
-      ? "blue"
-      : "white",
+    fill: isSelected ? "#3b82f6" : "white",
 
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
-    onClick,
+    // onMouseUp,
   };
+
+  const isControlPoint = ["bezierCurveToCP1", "bezierCurveToCP2"].includes(
+    handle.command
+  );
 
   return (
     <>
@@ -124,8 +145,8 @@ export default function Handle({
               handles[index - 1].args[1],
             ]}
             strokeWidth={1}
-            stroke={"#b91c1c"}
-            dash={[4, 4]}
+            stroke={"#3b82f6"}
+            dash={isHover || isDragging ? undefined : [4, 4]}
           />
 
           <Line
@@ -136,12 +157,11 @@ export default function Handle({
               handles[index + 1].args[1],
             ]}
             strokeWidth={1}
-            stroke={"#b91c1c"}
-            dash={[4, 4]}
+            stroke={"#3b82f6"}
+            dash={isHover || isDragging ? undefined : [4, 4]}
           />
         </Group>
       )}
-
       {handle.command === "bezierCurveToCP1" && (
         <Line
           points={[
@@ -151,11 +171,10 @@ export default function Handle({
             handles[index].args[1],
           ]}
           strokeWidth={1}
-          stroke={"#b91c1c"}
-          dash={[4, 4]}
+          stroke={"#3b82f6"}
+          dash={isHover || isDragging ? undefined : [4, 4]}
         />
       )}
-
       {handle.command === "bezierCurveToCP2" && (
         <Line
           points={[
@@ -165,18 +184,28 @@ export default function Handle({
             handles[index + 1].args[1],
           ]}
           strokeWidth={1}
-          stroke={"#b91c1c"}
-          dash={[4, 4]}
+          stroke={"#3b82f6"}
+          dash={isHover || isDragging ? undefined : [4, 4]}
         />
       )}
-
-      <Circle {...props} radius={4} />
+      {!isControlPoint && <Circle {...props} radius={4} />}
+      {isControlPoint && (
+        <Rect
+          {...props}
+          width={6}
+          height={6}
+          y={props.y - 3}
+          x={props.x}
+          rotation={45}
+        />
+      )}
 
       {/* <Text
         fontSize={11}
         text={`[${index}] ${Math.round(props.x)}, ${Math.round(props.y)}`}
-        x={props.x}
-        y={props.y - 14}
+        x={handle.args[0]}
+        y={handle.args[1] - 15}
+        fill="red"
       ></Text> */}
     </>
   );

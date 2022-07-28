@@ -18,6 +18,7 @@ import useHistory from "../hooks/useHistory";
 import parseRawSvg from "../utils/parseRawSvg";
 import makeCubicPayload from "../utils/makeCubicPayload";
 import quadraticToQubic from "../utils/quadraticToCubic";
+import KeyboardEventsProvider from "../context/KeyboardEventsProvider";
 
 const Editor = dynamic(() => import("../components/Editor"), { ssr: false });
 
@@ -57,6 +58,21 @@ const getFont = async ({ queryKey }: any) => {
           commands: normalize(
             glyph.path.commands.reduce(
               (acc: Command[], command: Command, index: number) => {
+                // if (command.command === "lineTo") {
+                //   const prev = glyph.path.commands[index - 1].args;
+
+                //   acc.push(
+                //     ...makeCubicPayload([
+                //       prev[0],
+                //       prev[1],
+                //       prev[0],
+                //       prev[1],
+                //       command.args[0],
+                //       command.args[1],
+                //     ])
+                //   );
+                // }
+
                 if (command.command === "quadraticCurveTo") {
                   return acc;
                 } else if (command.command == "quadraticCurveToCP") {
@@ -161,7 +177,6 @@ const Home: NextPage = () => {
         },
       },
     };
-
     queryClient.setQueryData(["font", sample], data);
   };
   if (query.isLoading) {
@@ -185,6 +200,7 @@ const Home: NextPage = () => {
   const { glyphs, ...font } = query.data;
 
   const glyph = glyphs.items[selected];
+  
 
   return (
     <div className="h-screen flex  overflow-hidden">
@@ -360,59 +376,61 @@ const Home: NextPage = () => {
       </Transition>
       <div className="flex-1  w-full  overflow-hidden">
         {!!glyph && (
-          <Editor
-            history={history}
-            settings={settings}
-            forceUpdate={forceUpdater}
-            onCommandsAdd={(
-              table: Font["glyphs"]["items"]["0"]["path"]["commands"]
-            ) => {
-              if (!query.data) {
-                return;
-              }
-              const data = {
-                ...query.data,
-                glyphs: {
-                  ...query.data.glyphs,
-                  items: {
-                    ...query.data.glyphs.items,
-                    [selected]: {
-                      ...query.data.glyphs.items[selected],
-                      path: {
-                        ...query.data.glyphs.items[selected].path,
+          <KeyboardEventsProvider>
+            <Editor
+              history={history}
+              settings={settings}
+              forceUpdate={forceUpdater}
+              onCommandsAdd={(
+                table: Font["glyphs"]["items"]["0"]["path"]["commands"]
+              ) => {
+                if (!query.data) {
+                  return;
+                }
+                const data = {
+                  ...query.data,
+                  glyphs: {
+                    ...query.data.glyphs,
+                    items: {
+                      ...query.data.glyphs.items,
+                      [selected]: {
+                        ...query.data.glyphs.items[selected],
+                        path: {
+                          ...query.data.glyphs.items[selected].path,
 
-                        commands: {
-                          ...query.data.glyphs.items[selected].path.commands,
-                          ids: table.ids,
-                          items: {
-                            ...query.data.glyphs.items[selected].path.commands
-                              .items,
-                            ...table.items,
+                          commands: {
+                            ...query.data.glyphs.items[selected].path.commands,
+                            ids: table.ids,
+                            items: {
+                              ...query.data.glyphs.items[selected].path.commands
+                                .items,
+                              ...table.items,
+                            },
                           },
                         },
                       },
                     },
                   },
-                },
-              };
+                };
 
-              queryClient.setQueryData(["font", sample], data);
-            }}
-            onCommandsUpdate={(commands) => {
-              updateCommands(commands);
-            }}
-            onCommandUpdate={(command) => {
-              updateCommands({
-                [command.id]: command,
-              });
-            }}
-            onSelectHandles={(ids: string[]) => {
-              setSelectedHandles(ids);
-            }}
-            font={font}
-            glyph={glyph}
-            selectedHandles={selectedHandles}
-          />
+                queryClient.setQueryData(["font", sample], data);
+              }}
+              onCommandsUpdate={(commands) => {
+                updateCommands(commands);
+              }}
+              onCommandUpdate={(command) => {
+                updateCommands({
+                  [command.id]: command,
+                });
+              }}
+              onSelectHandles={(ids: string[]) => {
+                setSelectedHandles(ids);
+              }}
+              font={font}
+              glyph={glyph}
+              selectedHandles={selectedHandles}
+            />
+          </KeyboardEventsProvider>
         )}
       </div>
 

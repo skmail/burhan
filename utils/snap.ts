@@ -88,14 +88,24 @@ export default function snap(
 
   const grid = gridSize / zoom;
 
+  const isInsideGridCell = (v: number, v1: number, grid: number) => {
+    const value = Math.round(Math.abs(v - v1));
+
+    return value < grid / 4;
+  };
   if (!fromPoints.x && gridSize) {
     const roundedX = Math.round(result.args[0] / grid) * grid;
-    result.args[0] = roundedX;
+    if (isInsideGridCell(roundedX, result.args[0], grid)) {
+      result.args[0] = roundedX;
+    }
   }
 
   if (!fromPoints.y && gridSize) {
     const roundedY = Math.round(result.args[1] / grid) * grid;
-    result.args[1] = roundedY;
+
+    if (isInsideGridCell(roundedY, result.args[1], grid)) {
+      result.args[1] = roundedY;
+    }
   }
 
   const guidelines = Object.values(fromPoints).filter(Boolean);

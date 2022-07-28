@@ -32,6 +32,7 @@ import useFresh from "../../hooks/useFresh";
 import computeAngle from "../../utils/computeAngle";
 import computeDistance from "../../utils/computeDistance";
 import { Bezier } from "bezier-js";
+import { useKeyboard } from "../../context/KeyboardEventsProvider";
 
 interface Props {
   font: Omit<Font, "glyphs">;
@@ -68,6 +69,7 @@ export default function Editor({
     y: 0,
   });
 
+  const [isHoveringHandle, setIsHoveringHandle] = useState(false);
   const [guidelines, setGuidelines] = useState<
     {
       command: string;
@@ -209,13 +211,101 @@ export default function Editor({
     command: Command;
     point: Point;
   }>();
-  const selectedHandlesRef = useRef<string[]>([]);
-  selectedHandlesRef.current = selectedHandles;
+
+  const getSelectedHandlesId = useFresh(selectedHandles);
   const pendingDragHistory = useRef<
     HistoryCommandUpdate | HistoryCommandsUpdate
   >();
 
   const getFreshCommands = useFresh(glyph.path.commands);
+
+  const { keys } = useKeyboard();
+
+  const getKeyboardKeys = useFresh(keys);
+
+  useEffect(() => {
+    if (!newPoint) {
+      document.body.style.cursor = "";
+    } else {
+      document.body.style.cursor = "url(icons/pen-add.svg), auto";
+    }
+  }, [newPoint]);
+
+  useEffect(() => {
+    if (!keys.Backspace && !keys.Delete) {
+      return;
+    }
+    const selections = getSelectedHandlesId();
+
+    if (!selections.length) {
+      return;
+    }
+    const commands = getFreshCommands();
+
+    const queue = [...selections];
+
+    const result: string[] = [];
+
+    const items: Record<string, Command> = {};
+
+    let ids = [...commands.ids];
+
+    while (queue.length > 0) {
+      const id = queue.shift() as string;
+
+      if (result.includes(id)) {
+        continue;
+      }
+
+      const _items = {
+        ...commands.items,
+        ...items,
+      };
+      const command = _items[id];
+      const index = ids.indexOf(id);
+
+      switch (command.command) {
+        case "lineTo":
+          result.push(id);
+          break;
+        case "bezierCurveTo":
+          result.push(id, ids[index - 1], ids[index - 2]);
+          break;
+        case "bezierCurveToCP1":
+          result.push(id, ids[index + 1], ids[index + 2]);
+          break;
+        case "bezierCurveToCP2":
+          result.push(id, ids[index - 1], ids[index + 1]);
+          break;
+        case "moveTo":
+          result.push(id);
+          const nextIndex = index + 1;
+          const next = _items[ids[nextIndex]];
+
+          if (!next) {
+            continue;
+          }
+
+          if ("bezierCurveToCP1" === next.command) {
+            result.push(ids[nextIndex + 1], ids[nextIndex + 2]);
+          }
+
+          items[next.id] = {
+            ...next,
+            command: "moveTo",
+          };
+      }
+
+      ids = ids.filter((id) => !result.includes(id));
+    }
+
+    onSelectHandles([]);
+
+    onCommandsAdd({
+      ids,
+      items,
+    });
+  }, [keys.Backspace, keys.Delete]);
   return (
     <div
       className="bg-gray-100 relative"
@@ -263,7 +353,9 @@ export default function Editor({
         }}
       />
       <SelectionArea
-        onSelectHandles={(ids) => onSelectHandles(ids)}
+        onSelectHandles={(ids) => {
+          onSelectHandles(ids);
+        }}
         handles={commands}
         workspaceRef={ref}
       />
@@ -423,15 +515,9 @@ export default function Editor({
           }
         }}
         onMouseMove={(e) => {
-          if (!ref.current || isDragging) {
+          if (!ref.current || isDragging || isHoveringHandle) {
             return;
           }
-          let pnt:
-            | {
-                command: Command;
-                point: Point;
-              }
-            | undefined = undefined;
 
           // lift this but not now
           const box = ref.current.getBoundingClientRect();
@@ -440,6 +526,8 @@ export default function Editor({
             e.evt.clientY - box.y,
           ];
 
+          const round = getKeyboardKeys()["ShiftLeft"] !== true;
+
           const computePointOnBezierCurve = (bz: Bezier) => {
             const m = bz.project({
               x: pos[0],
@@ -447,11 +535,21 @@ export default function Editor({
             });
 
             const distance = computeDistance([m.x, m.y], pos);
-            const p = bz.get(m.t || 0);
+            let t = m.t || 0;
+
+            if (round) {
+              const inv = 1.0 / 0.25;
+              t = Math.round(t * inv) / inv;
+            }
+
+            const p = bz.get(t);
+
             return {
               distance,
-              point: p,
-              t: m.t,
+              point: {
+                ...p,
+                t,
+              },
             };
           };
 
@@ -467,8 +565,21 @@ export default function Editor({
               const prev = commands[index - 1];
               const pr: PointTuple = [prev.args[0], prev.args[1]];
               aroundPoints.push(pr);
+              const space = [(p[0] - pr[0]) / 2, (p[1] - pr[1]) / 2];
               result = computePointOnBezierCurve(
-                new Bezier(pr[0], pr[1], p[0], p[1], p[0], p[1])
+                new Bezier(
+                  pr[0],
+                  pr[1],
+
+                  pr[0] + space[0],
+                  pr[1] + space[1],
+
+                  p[0] - space[0],
+                  p[1] - space[1],
+
+                  p[0],
+                  p[1]
+                )
               );
             } else if (command.command === "bezierCurveTo") {
               const cp3 = commands[index - 3];
@@ -494,39 +605,26 @@ export default function Editor({
                   p[1]
                 )
               );
-            } else if (command.command === "quadraticCurveTo") {
-              const cp2 = commands[index - 2];
-              const cp1 = commands[index - 1];
+            } else if (command.command === "closePath") {
+              const pr = commands[0].args;
+              const p = commands[index - 1].args;
 
-              if (!cp1 || !cp2) {
-                continue;
-              }
+              aroundPoints.push(pr, p);
+
+              const space = [(p[0] - pr[0]) / 2, (p[1] - pr[1]) / 2];
               result = computePointOnBezierCurve(
                 new Bezier(
-                  cp2.args[0],
-                  cp2.args[1],
+                  pr[0],
+                  pr[1],
 
-                  cp1.args[0],
-                  cp1.args[1],
+                  pr[0] + space[0],
+                  pr[1] + space[1],
+
+                  p[0] - space[0],
+                  p[1] - space[1],
+
                   p[0],
                   p[1]
-                )
-              );
-            } else if (command.command === "closePath") {
-              const p0 = commands[0];
-              const cp2 = commands[index - 1];
-
-              aroundPoints.push(p0.args, cp2.args);
-
-              result = computePointOnBezierCurve(
-                new Bezier(
-                  cp2.args[0],
-                  cp2.args[1],
-
-                  cp2.args[0],
-                  cp2.args[1],
-                  p0.args[0],
-                  p0.args[1]
                 )
               );
             } else {
@@ -536,11 +634,12 @@ export default function Editor({
 
             aroundPoints.push(command.args);
 
-            if (result && result.distance < 10) {
+            const maxDistance = 5;
+            if (result && result.distance < maxDistance) {
               const d = aroundPoints.filter((p) => {
                 return (
                   computeDistance(p, [result.point.x, result.point.y]) * zoom <
-                  10
+                  maxDistance
                 );
               });
 
@@ -607,7 +706,17 @@ export default function Editor({
             )}
             <Handles
               onSelect={(id) => {
-                onSelectHandles([id]);
+                if (keys.ShiftLeft && !selectedHandles.includes(id)) {
+                  onSelectHandles([...selectedHandles, id]);
+                } else if (selectedHandles.includes(id)) {
+                  onSelectHandles(selectedHandles.filter((i) => i !== id));
+                } else {
+                  onSelectHandles([id]);
+                }
+              }}
+              onHover={(isHover) => {
+                setIsHoveringHandle(isHover);
+                setNewPoint(undefined);
               }}
               handles={commands}
               selectedHandles={selectedHandles}
@@ -618,33 +727,24 @@ export default function Editor({
                 const commands = glyph.path.commands;
                 const freshCommands = getFreshCommands();
 
-                const selections = selectedHandlesRef.current.reduce(
-                  (acc, id) => {
-                    if (acc.includes(id)) {
-                      return acc;
-                    }
-                    const command = commands.items[id];
-                    acc.push(id);
-                    const index = commands.ids.indexOf(command.id);
-                    if (command.command === "bezierCurveTo") {
-                      acc.push(
-                        commands.ids[index + 1],
-                        commands.ids[index - 1]
-                      );
-                    } else if (command.command === "lineTo") {
-                      const nextPoint = commands.items[commands.ids[index + 1]];
-                      if (
-                        nextPoint &&
-                        nextPoint.command === "bezierCurveToCP1"
-                      ) {
-                        acc.push(nextPoint.id);
-                      }
-                    }
-
+                const selections = getSelectedHandlesId().reduce((acc, id) => {
+                  if (acc.includes(id)) {
                     return acc;
-                  },
-                  [] as string[]
-                );
+                  }
+                  const command = commands.items[id];
+                  acc.push(id);
+                  const index = commands.ids.indexOf(command.id);
+                  if (command.command === "bezierCurveTo") {
+                    acc.push(commands.ids[index + 1], commands.ids[index - 1]);
+                  } else if (command.command === "lineTo") {
+                    const nextPoint = commands.items[commands.ids[index + 1]];
+                    if (nextPoint && nextPoint.command === "bezierCurveToCP1") {
+                      acc.push(nextPoint.id);
+                    }
+                  }
+
+                  return acc;
+                }, [] as string[]);
 
                 const command = commands.items[handle.id];
 

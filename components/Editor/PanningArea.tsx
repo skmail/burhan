@@ -1,36 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { useKeyboard } from "../../context/KeyboardEventsProvider";
 
 interface Props {
   onPan: (x: number, y: number) => void;
 }
 export default function PanningArea({ onPan }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [isPanning, setIsPanning] = useState(false);
+  const { keys } = useKeyboard();
+  const isPanning = keys["Space"] === true;
 
-  useEffect(() => {
-    const keys: Record<string, boolean> = {};
-    const onKeyup = (e: KeyboardEvent) => {
-      if (e.code === "Space" && keys[e.code]) {
-        keys[e.code] = false;
-        setIsPanning(false);
-        window.removeEventListener("keyup", onKeyup);
-      }
-    };
-    const onKeydown = (e: KeyboardEvent) => {
-      keys[e.code] = true;
-      if (e.code === "Space") {
-        setIsPanning(true);
-      }
-
-      window.addEventListener("keyup", onKeyup);
-    };
-
-    window.addEventListener("keydown", onKeydown);
-    return () => {
-      window.removeEventListener("keyup", onKeyup);
-      window.removeEventListener("keydown", onKeydown);
-    };
-  }, []);
   useEffect(() => {
     if (!ref.current || !isPanning) {
       return;
@@ -39,8 +17,8 @@ export default function PanningArea({ onPan }: Props) {
     let startX = 0;
     let startY = 0;
     const onMouseMove = (e: MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
+      e.preventDefault();
+      e.stopPropagation();
       const movedX = e.clientX - startX;
       const movedY = e.clientY - startY;
       startY = e.clientY;
