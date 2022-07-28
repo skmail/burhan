@@ -14,7 +14,13 @@ export interface Point {
 }
 
 export type OnHandleActivate = (handle: Command) => void;
-export type OnHandleDrag = (handle: Command) => void;
+export type OnHandleDrag = (
+  handle: Command,
+  options?: {
+    allowSnap?: boolean;
+    fresh?: boolean;
+  }
+) => void;
 export type OnCommandUpdate = (command: Command) => void;
 export type onCommandsUpdate = (commands: Record<string, Command>) => void;
 
@@ -79,4 +85,13 @@ export interface Vector {
   x: number;
   y: number;
   t?: number;
+}
+
+export interface SnapResult {
+  command: string;
+  args: PointTuple;
+  fromPoints: {
+    command: string;
+    args: PointTuple;
+  }[];
 }

@@ -200,7 +200,6 @@ const Home: NextPage = () => {
   const { glyphs, ...font } = query.data;
 
   const glyph = glyphs.items[selected];
-  
 
   return (
     <div className="h-screen flex  overflow-hidden">
@@ -374,65 +373,63 @@ const Home: NextPage = () => {
           </div>
         </div>
       </Transition>
-      <div className="flex-1  w-full  overflow-hidden">
-        {!!glyph && (
-          <KeyboardEventsProvider>
-            <Editor
-              history={history}
-              settings={settings}
-              forceUpdate={forceUpdater}
-              onCommandsAdd={(
-                table: Font["glyphs"]["items"]["0"]["path"]["commands"]
-              ) => {
-                if (!query.data) {
-                  return;
-                }
-                const data = {
-                  ...query.data,
-                  glyphs: {
-                    ...query.data.glyphs,
-                    items: {
-                      ...query.data.glyphs.items,
-                      [selected]: {
-                        ...query.data.glyphs.items[selected],
-                        path: {
-                          ...query.data.glyphs.items[selected].path,
+      {!!glyph && (
+        <KeyboardEventsProvider className="flex-1  w-full  overflow-hidden">
+          <Editor
+            history={history}
+            settings={settings}
+            forceUpdate={forceUpdater}
+            onCommandsAdd={(
+              table: Font["glyphs"]["items"]["0"]["path"]["commands"]
+            ) => {
+              if (!query.data) {
+                return;
+              }
+              const data = {
+                ...query.data,
+                glyphs: {
+                  ...query.data.glyphs,
+                  items: {
+                    ...query.data.glyphs.items,
+                    [selected]: {
+                      ...query.data.glyphs.items[selected],
+                      path: {
+                        ...query.data.glyphs.items[selected].path,
 
-                          commands: {
-                            ...query.data.glyphs.items[selected].path.commands,
-                            ids: table.ids,
-                            items: {
-                              ...query.data.glyphs.items[selected].path.commands
-                                .items,
-                              ...table.items,
-                            },
+                        commands: {
+                          ...query.data.glyphs.items[selected].path.commands,
+                          ids: table.ids,
+                          items: {
+                            ...query.data.glyphs.items[selected].path.commands
+                              .items,
+                            ...table.items,
                           },
                         },
                       },
                     },
                   },
-                };
+                },
+              };
 
-                queryClient.setQueryData(["font", sample], data);
-              }}
-              onCommandsUpdate={(commands) => {
-                updateCommands(commands);
-              }}
-              onCommandUpdate={(command) => {
-                updateCommands({
-                  [command.id]: command,
-                });
-              }}
-              onSelectHandles={(ids: string[]) => {
-                setSelectedHandles(ids);
-              }}
-              font={font}
-              glyph={glyph}
-              selectedHandles={selectedHandles}
-            />
-          </KeyboardEventsProvider>
-        )}
-      </div>
+              queryClient.setQueryData(["font", sample], data);
+            }}
+            onCommandsUpdate={(commands) => {
+              updateCommands(commands);
+            }}
+            onCommandUpdate={(command) => {
+              updateCommands({
+                [command.id]: command,
+              });
+            }}
+            onSelectHandles={(ids: string[]) => {
+              setSelectedHandles(ids);
+            }}
+            font={font}
+            glyph={glyph}
+            selectedHandles={selectedHandles}
+          />
+        </KeyboardEventsProvider>
+      )}
 
       <div
         className={`fixed top-2  z-50 ${

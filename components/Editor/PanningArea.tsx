@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useKeyboard } from "../../context/KeyboardEventsProvider";
+import onLeftButton from "../../utils/onLeftButton";
 
 interface Props {
   onPan: (x: number, y: number) => void;
@@ -13,6 +14,7 @@ export default function PanningArea({ onPan }: Props) {
     if (!ref.current || !isPanning) {
       return;
     }
+
     const element = ref.current;
     let startX = 0;
     let startY = 0;
@@ -29,12 +31,15 @@ export default function PanningArea({ onPan }: Props) {
       element.removeEventListener("mousemove", onMouseMove);
       element.removeEventListener("mouseup", onMouseUp);
     };
-    const onMouseDown = (e: MouseEvent) => {
+    const onMouseDown = onLeftButton((e: MouseEvent) => {
+      e.preventDefault();
+      e.preventDefault();
+      e.stopPropagation();
       startX = e.clientX;
       startY = e.clientY;
       element.addEventListener("mousemove", onMouseMove);
       element.addEventListener("mouseup", onMouseUp);
-    };
+    });
 
     element.addEventListener("mousedown", onMouseDown);
 
@@ -50,6 +55,7 @@ export default function PanningArea({ onPan }: Props) {
   }
   return (
     <div
+      tabIndex={1}
       ref={ref}
       style={{
         cursor: "grab",

@@ -1,4 +1,4 @@
-import { PointTuple, Command } from "../types";
+import { PointTuple, Command, SnapResult } from "../types";
 
 const inRange = (p1: number, p2: number, scale: number = 1, range = 4) => {
   const diff = Math.abs(Math.round(p1 - p2));
@@ -6,14 +6,6 @@ const inRange = (p1: number, p2: number, scale: number = 1, range = 4) => {
   return x;
 };
 
-type Result = {
-  command: string;
-  args: PointTuple;
-  fromPoints: {
-    command: string;
-    args: PointTuple;
-  }[];
-};
 export default function snap(
   handle: Command,
   points: Command[],
@@ -21,8 +13,8 @@ export default function snap(
   zoom: number = 1,
   gridSize: number,
   snapToOtherPoints: boolean
-): Result {
-  let result: Result = {
+): SnapResult {
+  let result: SnapResult = {
     command: "none",
     args: [handle.args[0], handle.args[1]],
     fromPoints: [],

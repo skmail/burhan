@@ -8,6 +8,8 @@ import {
   PointTuple,
   Settings,
   Point,
+  SnapResult,
+  OnHandleDrag,
 } from "../../types";
 import { Stage, Layer, Path, Group, Circle, Text } from "react-konva";
 import commandsToPath from "../../utils/commandsToPathData";
@@ -230,6 +232,272 @@ export default function Editor({
       document.body.style.cursor = "url(icons/pen-add.svg), auto";
     }
   }, [newPoint]);
+
+  const onDrag: OnHandleDrag = (handle, options = {}) => {
+    options = {
+      fresh: false,
+      allowSnap: true,
+      ...options,
+    };
+    const freshCommands = getFreshCommands();
+    const commands = options.fresh ? freshCommands : glyph.path.commands;
+
+    const selections = getSelectedHandlesId().reduce((acc, id) => {
+      if (acc.includes(id)) {
+        return acc;
+      }
+      const command = commands.items[id];
+      acc.push(id);
+      const index = commands.ids.indexOf(command.id);
+      if (command.command === "bezierCurveTo") {
+        acc.push(commands.ids[index + 1], commands.ids[index - 1]);
+      } else if (command.command === "lineTo") {
+        const nextPoint = commands.items[commands.ids[index + 1]];
+        if (nextPoint && nextPoint.command === "bezierCurveToCP1") {
+          acc.push(nextPoint.id);
+        }
+      }
+
+      return acc;
+    }, [] as string[]);
+
+    const command = commands.items[handle.id];
+
+    const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
+
+    let xy: PointTuple = [
+      command.args[0] + amountToMove[0],
+      command.args[1] + amountToMove[1],
+    ];
+
+    let snapped: SnapResult = {
+      command: "none",
+      args: xy,
+      fromPoints: [],
+    };
+
+    if (options.allowSnap) {
+      snapped = snap(
+        {
+          ...handle,
+          args: xy,
+        },
+        (points as any).filter((p: any) => !selections.includes(p.id)),
+        scale,
+        scaleWithoutZoom,
+        settings.snapToGrid ? settings.gridSize : 0,
+        settings.snapToOtherPoints
+      );
+
+      if (snapped.command !== "none" && snapped.fromPoints) {
+        setGuidelines(
+          snapped.fromPoints.map((p) => ({
+            command: p.command,
+            points: [snapped.args[0], snapped.args[1], p.args[0], p.args[1]],
+          }))
+        );
+      } else {
+        setGuidelines((lines) => (lines.length ? [] : lines));
+      }
+    }
+
+    const snapDiff = [snapped.args[0] - xy[0], snapped.args[1] - xy[1]];
+
+    xy = snapped.args;
+
+    const newHandles = selections.reduce((acc, id) => {
+      if (acc[id]) {
+        return acc;
+      }
+      const cmd = commands.items[id];
+
+      if (!cmd) {
+        return acc;
+      }
+      let args: PointTuple;
+      if (id === handle.id) {
+        args = xy;
+      } else {
+        args = [
+          cmd.args[0] + amountToMove[0] + snapDiff[0],
+          cmd.args[1] + amountToMove[1] + snapDiff[1],
+        ];
+      }
+
+      acc[id] = {
+        ...cmd,
+        args,
+      };
+
+      const getPoint = (
+        index1: number,
+        index2: number,
+        commands: Font["glyphs"]["items"]["0"]["path"]["commands"],
+        type: Command["command"],
+        args: PointTuple,
+        mirrorType: Settings["vectorMirrorType"]
+      ): Command | undefined => {
+        const pointId = commands.ids[index1];
+        let point = acc[pointId] || commands.items[pointId];
+        const nextPointId = commands.ids[index2];
+        let nextPoint = commands.items[nextPointId];
+
+        if (!nextPoint) {
+          return;
+        }
+        if (nextPoint.command === type) {
+          if (mirrorType === "angleLength") {
+            args = reflect(args, point.args);
+          } else if (mirrorType === "angle") {
+            const angle = computeAngle(point.args, args);
+
+            const d = computeDistance(point.args, nextPoint.args);
+
+            const xx = point.args[0] + d * Math.cos(angle);
+            const yy = point.args[1] + d * Math.sin(angle);
+
+            args = [xx, yy];
+
+            args = reflect(args, point.args, nextPoint.args);
+          } else {
+            return;
+          }
+
+          return {
+            ...nextPoint,
+            args,
+          };
+        }
+      };
+
+      const index = commands.ids.indexOf(cmd.id);
+
+      if (cmd.command === "bezierCurveToCP1") {
+        const nextPoint = getPoint(
+          index - 1,
+          index - 2,
+          freshCommands,
+          "bezierCurveToCP2",
+          args,
+          settings.vectorMirrorType
+        );
+
+        if (nextPoint) {
+          acc[nextPoint.id] = nextPoint;
+        }
+      }
+
+      if (cmd.command === "bezierCurveToCP2") {
+        const nextPoint = getPoint(
+          index + 1,
+          index + 2,
+          freshCommands,
+          "bezierCurveToCP1",
+          args,
+          settings.vectorMirrorType
+        );
+
+        if (nextPoint) {
+          acc[nextPoint.id] = nextPoint;
+        }
+      }
+
+      return acc;
+    }, {} as Record<string, Command>);
+
+    onCommandsUpdate(newHandles);
+
+    pendingDragHistory.current = {
+      type: "commands.update",
+      payload: {
+        old: pendingDragHistory.current
+          ? pendingDragHistory.current.payload.old
+          : Object.keys(newHandles).reduce(
+              (acc, id) => ({
+                ...acc,
+                [id]: glyph.path.commands.items[id],
+              }),
+              {} as Record<string, Command>
+            ),
+        new: newHandles,
+      },
+    } as HistoryCommandsUpdate;
+  };
+  useEffect(() => {
+    if (
+      !keys.ArrowUp &&
+      !keys.ArrowLeft &&
+      !keys.ArrowRight &&
+      !keys.ArrowDown
+    ) {
+      return;
+    }
+    const selections = getSelectedHandlesId();
+
+    if (!selections.length) {
+      return;
+    }
+
+    const moveUp = () => {
+      const firstHandle = getFreshCommands().items[selections[0]];
+      const args: PointTuple = [0, 0];
+      let a = 1;
+      let snap = true;
+      if (keys.ShiftLeft) {
+        a = settings.gridSize;
+      } else if (keys.AltLeft) {
+        a = settings.gridSize / 4;
+      } else {
+        snap = false;
+      }
+
+      const amount = a * zoom;
+
+      if (keys.ArrowUp) {
+        args[1] += amount;
+      }
+
+      if (keys.ArrowLeft) {
+        args[0] -= amount;
+      }
+
+      if (keys.ArrowRight) {
+        args[0] += amount;
+      }
+
+      if (keys.ArrowDown) {
+        args[1] -= amount;
+      }
+
+      onDrag(
+        {
+          ...firstHandle,
+          args,
+        },
+        {
+          allowSnap: snap,
+          fresh: true,
+        }
+      );
+    };
+
+    moveUp();
+    const interval = setInterval(() => moveUp(), 200);
+
+    return () => {
+      setGuidelines([]);
+      clearInterval(interval);
+    };
+  }, [
+    keys.ArrowUp,
+    keys.ArrowLeft,
+    keys.ArrowRight,
+    keys.ArrowDown,
+    zoom,
+    keys.ShiftLeft,
+    keys.AltLeft,
+    settings.gridSize,
+  ]);
 
   useEffect(() => {
     if (!keys.Backspace && !keys.Delete) {
@@ -662,7 +930,7 @@ export default function Editor({
         width={bounds.width}
         height={bounds.height}
       >
-        <Layer>
+        <Layer className="asxx">
           <Metrics
             width={bounds.width}
             height={bounds.height}
@@ -723,197 +991,7 @@ export default function Editor({
               onActivate={() => {
                 setIsDragging(true);
               }}
-              onDrag={(handle) => {
-                const commands = glyph.path.commands;
-                const freshCommands = getFreshCommands();
-
-                const selections = getSelectedHandlesId().reduce((acc, id) => {
-                  if (acc.includes(id)) {
-                    return acc;
-                  }
-                  const command = commands.items[id];
-                  acc.push(id);
-                  const index = commands.ids.indexOf(command.id);
-                  if (command.command === "bezierCurveTo") {
-                    acc.push(commands.ids[index + 1], commands.ids[index - 1]);
-                  } else if (command.command === "lineTo") {
-                    const nextPoint = commands.items[commands.ids[index + 1]];
-                    if (nextPoint && nextPoint.command === "bezierCurveToCP1") {
-                      acc.push(nextPoint.id);
-                    }
-                  }
-
-                  return acc;
-                }, [] as string[]);
-
-                const command = commands.items[handle.id];
-
-                const amountToMove = [
-                  handle.args[0] / scale,
-                  handle.args[1] / scale,
-                ];
-
-                let xy: PointTuple = [
-                  command.args[0] + amountToMove[0],
-                  command.args[1] + amountToMove[1],
-                ];
-
-                const snapped = snap(
-                  {
-                    ...handle,
-                    args: xy,
-                  },
-                  (points as any).filter(
-                    (p: any) => !selections.includes(p.id)
-                  ),
-                  scale,
-                  scaleWithoutZoom,
-                  settings.snapToGrid ? settings.gridSize : 0,
-                  settings.snapToOtherPoints
-                );
-
-                if (snapped.command !== "none" && snapped.fromPoints) {
-                  setGuidelines(
-                    snapped.fromPoints.map((p) => ({
-                      command: p.command,
-                      points: [
-                        snapped.args[0],
-                        snapped.args[1],
-                        p.args[0],
-                        p.args[1],
-                      ],
-                    }))
-                  );
-                } else {
-                  setGuidelines((lines) => (lines.length ? [] : lines));
-                }
-
-                const snapDiff = [
-                  snapped.args[0] - xy[0],
-                  snapped.args[1] - xy[1],
-                ];
-
-                xy = snapped.args;
-
-                const newHandles = selections.reduce((acc, id) => {
-                  if (acc[id]) {
-                    return acc;
-                  }
-                  const cmd = commands.items[id];
-
-                  if (!cmd) {
-                    return acc;
-                  }
-                  let args: PointTuple;
-                  if (id === handle.id) {
-                    args = xy;
-                  } else {
-                    console.log(cmd);
-                    args = [
-                      cmd.args[0] + amountToMove[0] + snapDiff[0],
-                      cmd.args[1] + amountToMove[1] + snapDiff[1],
-                    ];
-                  }
-
-                  acc[id] = {
-                    ...cmd,
-                    args,
-                  };
-
-                  const getPoint = (
-                    index1: number,
-                    index2: number,
-                    commands: Font["glyphs"]["items"]["0"]["path"]["commands"],
-                    type: Command["command"],
-                    args: PointTuple,
-                    mirrorType: Settings["vectorMirrorType"]
-                  ): Command | undefined => {
-                    const pointId = commands.ids[index1];
-                    let point = acc[pointId] || commands.items[pointId];
-                    const nextPointId = commands.ids[index2];
-                    let nextPoint = commands.items[nextPointId];
-
-                    if (!nextPoint) {
-                      return;
-                    }
-                    if (nextPoint.command === type) {
-                      if (mirrorType === "angleLength") {
-                        args = reflect(args, point.args);
-                      } else if (mirrorType === "angle") {
-                        const angle = computeAngle(point.args, args);
-
-                        const d = computeDistance(point.args, nextPoint.args);
-
-                        const xx = point.args[0] + d * Math.cos(angle);
-                        const yy = point.args[1] + d * Math.sin(angle);
-
-                        args = [xx, yy];
-
-                        args = reflect(args, point.args, nextPoint.args);
-                      } else {
-                        return;
-                      }
-
-                      return {
-                        ...nextPoint,
-                        args,
-                      };
-                    }
-                  };
-
-                  const index = commands.ids.indexOf(cmd.id);
-
-                  if (cmd.command === "bezierCurveToCP1") {
-                    const nextPoint = getPoint(
-                      index - 1,
-                      index - 2,
-                      freshCommands,
-                      "bezierCurveToCP2",
-                      args,
-                      settings.vectorMirrorType
-                    );
-
-                    if (nextPoint) {
-                      acc[nextPoint.id] = nextPoint;
-                    }
-                  }
-
-                  if (cmd.command === "bezierCurveToCP2") {
-                    const nextPoint = getPoint(
-                      index + 1,
-                      index + 2,
-                      freshCommands,
-                      "bezierCurveToCP1",
-                      args,
-                      settings.vectorMirrorType
-                    );
-
-                    if (nextPoint) {
-                      acc[nextPoint.id] = nextPoint;
-                    }
-                  }
-
-                  return acc;
-                }, {} as Record<string, Command>);
-
-                onCommandsUpdate(newHandles);
-
-                pendingDragHistory.current = {
-                  type: "commands.update",
-                  payload: {
-                    old: pendingDragHistory.current
-                      ? pendingDragHistory.current.payload.old
-                      : Object.keys(newHandles).reduce(
-                          (acc, id) => ({
-                            ...acc,
-                            [id]: glyph.path.commands.items[id],
-                          }),
-                          {} as Record<string, Command>
-                        ),
-                    new: newHandles,
-                  },
-                } as HistoryCommandsUpdate;
-              }}
+              onDrag={onDrag}
               onDragEnd={() => {
                 setIsDragging(false);
                 setGuidelines([]);

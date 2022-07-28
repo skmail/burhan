@@ -1,5 +1,6 @@
 import { RefObject, useEffect, useRef, useState } from "react";
 import { Bounds, Command } from "../../types";
+import onLeftButton from "../../utils/onLeftButton";
 
 interface Props {
   workspaceRef: RefObject<HTMLDivElement>;
@@ -20,7 +21,7 @@ export default function SelectionArea({
 
   const handlesRef = useRef<Command[]>([]);
   handlesRef.current = handles;
- 
+
   useEffect(() => {
     if (!workspaceRef.current) {
       return;
@@ -28,7 +29,7 @@ export default function SelectionArea({
     let startX = 0;
     let startY = 0;
     let box: DOMRect;
-    const onMousedown = (e: MouseEvent) => {
+    const onMousedown = onLeftButton((e: MouseEvent) => {
       if (!workspaceRef.current) {
         return;
       }
@@ -38,7 +39,7 @@ export default function SelectionArea({
       startY = e.clientY;
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
-    };
+    });
     const onMouseMove = (e: MouseEvent) => {
       let width = e.clientX - startX;
       let height = e.clientY - startY;

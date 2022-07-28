@@ -3,6 +3,7 @@ import {
   PropsWithChildren,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -16,10 +17,17 @@ const KeyboardContext = createContext<{
 
 export default function KeyboardEventsProvider({
   children,
-}: PropsWithChildren) {
+  ...props
+}: PropsWithChildren<JSX.IntrinsicElements["div"]>) {
+  const ref = useRef<HTMLDivElement>(null);
+
   const [pressedKeys, setPressedKeys] = useState<KeysTable>({});
 
   useEffect(() => {
+    if (!ref.current) {
+      return;
+    }
+    const element = ref.current;
     const onKeyDown = (e: KeyboardEvent) => {
       setPressedKeys((keys) => ({
         ...keys,
@@ -34,12 +42,18 @@ export default function KeyboardEventsProvider({
       }));
     };
 
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
+    const onBlur = () => {
+      setPressedKeys({});
+    };
+
+    element.addEventListener("keydown", onKeyDown);
+    element.addEventListener("keyup", onKeyUp);
+    element.addEventListener("blur", onBlur);
 
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
+      element.removeEventListener("keydown", onKeyDown);
+      element.removeEventListener("keyup", onKeyUp);
+      element.removeEventListener("blur", onBlur);
     };
   }, []);
   return (
@@ -48,7 +62,9 @@ export default function KeyboardEventsProvider({
         keys: pressedKeys,
       }}
     >
-      {children}
+      <div {...props} tabIndex={4} ref={ref}>
+        {children}
+      </div>
     </KeyboardContext.Provider>
   );
 }

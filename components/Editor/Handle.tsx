@@ -72,6 +72,9 @@ export default function Handle({
   };
 
   const onMouseDown: KonvaNodeEvents["onMouseDown"] = (e) => {
+    if (e.evt.button !== 0) {
+      return;
+    }
     onActivate(handle);
     e.evt.preventDefault();
     e.evt.stopPropagation();
