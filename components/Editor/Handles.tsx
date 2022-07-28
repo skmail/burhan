@@ -1,8 +1,9 @@
-import { Command, OnHandleDrag } from "../../types";
+import { Command, OnHandleActivate, OnHandleDrag } from "../../types";
 import Handle from "./Handle";
 
 interface Props {
   handles: Command[];
+  onActivate: OnHandleActivate;
   onDrag: OnHandleDrag;
   onDragEnd: () => void;
   selectedHandles: string[];
@@ -14,6 +15,7 @@ export default function Handles({
   onDragEnd,
   selectedHandles,
   onSelect,
+  onActivate,
 }: Props) {
   const output = handles.reduce((acc, handle, index) => {
     const h = (
@@ -24,6 +26,7 @@ export default function Handles({
         key={handle.id}
         handle={handle}
         onDragEnd={onDragEnd}
+        onActivate={onActivate}
         isSelected={selectedHandles.includes(handle.id)}
         onSelect={(deselect = false) => {
           if (deselect || !selectedHandles.includes(handle.id)) {
@@ -33,8 +36,8 @@ export default function Handles({
       />
     );
 
-    if(!handle.args.length){
-      return acc
+    if (!handle.args.length) {
+      return acc;
     }
     if (
       ["bezierCurveTo", "moveTo", "lineTo", "quadraticCurveTo"].includes(

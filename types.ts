@@ -13,6 +13,7 @@ export interface Point {
   t?: number;
 }
 
+export type OnHandleActivate = (handle: Command) => void;
 export type OnHandleDrag = (handle: Command) => void;
 export type OnCommandUpdate = (command: Command) => void;
 export type onCommandsUpdate = (commands: Record<string, Command>) => void;

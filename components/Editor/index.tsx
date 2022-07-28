@@ -59,6 +59,8 @@ export default function Editor({
   history,
   onCommandsAdd,
 }: Props) {
+  const [isDragging, setIsDragging] = useState(false);
+
   const [bounds, setBounds] = useState<Bounds>({
     width: 0,
     height: 0,
@@ -78,6 +80,7 @@ export default function Editor({
   const [pan, setPan] = useState<PointTuple>([0, 0]);
 
   const updateZoom = (value: number) => {
+    setNewPoint(undefined);
     setZoom((zoom) => Math.min(10, Math.max(zoom + value, 0.1)));
   };
 
@@ -276,7 +279,7 @@ export default function Editor({
         ]}
       />
       <Stage
-        onClick={(e) => {
+        onMouseDown={(e) => {
           if (!newPoint) {
             return;
           }
@@ -360,58 +363,6 @@ export default function Editor({
             });
 
             return;
-          } else if (newPoint.command.command === "quadraticCurveTo") {
-            const prev = freshCommands.items[freshCommands.ids[index - 2]].args;
-            const cp = freshCommands.items[freshCommands.ids[index - 1]].args;
-            const cp3 = freshCommands.items[freshCommands.ids[index - 3]].args;
-
-            const bz = new Bezier(
-              Number(prev[0] + (2 / 3) * (cp[0] - prev[0])),
-
-              Number(prev[1] + (2 / 3) * (cp[1] - prev[1])),
-
-              Number(p.args[0] + (2 / 3) * (cp[0] - p.args[0])),
-              Number(p.args[1] + (2 / 3) * (cp[1] - p.args[1])),
-
-              p.args[0],
-              p.args[1]
-            );
-
-            const result = bz.split(newPoint.point.t);
-
-            const newCommands = [
-              ...toBzCommands(bz.points[0], bz.points[1], bz.points[2]),
-            ];
-            // const newCommands = [
-            //   ...toBzCommands(
-            //     result.left.points[1],
-            //     result.left.points[2],
-            //     result.left.points[3]
-            //   ),
-            //   ...toBzCommands(
-            //     result.right.points[1],
-            //     result.right.points[2],
-            //     result.right.points[3]
-            //   ),
-            // ];
-
-            let ids = insert(
-              freshCommands.ids,
-              index - 1,
-              newCommands.map((c) => c.id),
-              2
-            );
-
-            onCommandsAdd({
-              ids,
-              items: newCommands.reduce(
-                (acc, item) => ({
-                  ...acc,
-                  [item.id]: item,
-                }),
-                {}
-              ),
-            });
           } else if (newPoint.command.command === "bezierCurveTo") {
             const cp3 = freshCommands.items[freshCommands.ids[index - 3]];
             const cp1 = freshCommands.items[freshCommands.ids[index - 2]];
@@ -435,7 +386,7 @@ export default function Editor({
               p.args[1]
             );
 
-            const result = bz.split(newPoint.point.t);
+            const result = bz.split(newPoint.point.t || 1);
 
             const newCommands = [
               ...toBzCommands(
@@ -456,7 +407,7 @@ export default function Editor({
               newCommands.map((c) => c.id),
               3
             );
-            console.log(freshCommands, ids);
+
             onCommandsAdd({
               ids,
               items: newCommands.reduce(
@@ -472,7 +423,7 @@ export default function Editor({
           }
         }}
         onMouseMove={(e) => {
-          if (!ref.current) {
+          if (!ref.current || isDragging) {
             return;
           }
           let pnt:
@@ -481,7 +432,8 @@ export default function Editor({
                 point: Point;
               }
             | undefined = undefined;
-          let shortestDistance: number | null = null;
+
+          // lift this but not now
           const box = ref.current.getBoundingClientRect();
           const pos: PointTuple = [
             e.evt.clientX - box.x,
@@ -504,6 +456,8 @@ export default function Editor({
           };
 
           for (let index = 0; index < commands.length; index++) {
+            const aroundPoints: PointTuple[] = [];
+
             const command = commands[index];
             const p = [command.args[0], command.args[1]];
 
@@ -511,8 +465,8 @@ export default function Editor({
 
             if (command.command === "lineTo") {
               const prev = commands[index - 1];
-              const pr = [prev.args[0], prev.args[1]];
-
+              const pr: PointTuple = [prev.args[0], prev.args[1]];
+              aroundPoints.push(pr);
               result = computePointOnBezierCurve(
                 new Bezier(pr[0], pr[1], p[0], p[1], p[0], p[1])
               );
@@ -524,6 +478,8 @@ export default function Editor({
               if (!cp1 || !cp2 || !cp3) {
                 continue;
               }
+              aroundPoints.push(cp1.args, cp2.args, cp3.args);
+
               result = computePointOnBezierCurve(
                 new Bezier(
                   cp3.args[0],
@@ -559,43 +515,50 @@ export default function Editor({
             } else if (command.command === "closePath") {
               const p0 = commands[0];
               const cp2 = commands[index - 1];
-              const cp1 = commands[index - 1];
+
+              aroundPoints.push(p0.args, cp2.args);
 
               result = computePointOnBezierCurve(
                 new Bezier(
                   cp2.args[0],
                   cp2.args[1],
 
-                  cp1.args[0],
-                  cp1.args[1],
+                  cp2.args[0],
+                  cp2.args[1],
                   p0.args[0],
                   p0.args[1]
                 )
               );
             } else {
               // console.log(command.command);
+              continue;
             }
 
-            if (
-              result &&
-              result.distance < 15 &&
-              (shortestDistance === null || result.distance < shortestDistance)
-            ) {
-              shortestDistance = result.distance;
-              pnt = {
+            aroundPoints.push(command.args);
+
+            if (result && result.distance < 10) {
+              const d = aroundPoints.filter((p) => {
+                return (
+                  computeDistance(p, [result.point.x, result.point.y]) * zoom <
+                  10
+                );
+              });
+
+              if (d.length > 0) {
+                setNewPoint(undefined);
+                return;
+              }
+
+              setNewPoint({
                 point: result.point,
                 command,
-                index,
-                t: result.t,
-              };
+              });
+
+              return;
             }
           }
 
-          if (pnt) {
-            setNewPoint(pnt);
-          } else {
-            setNewPoint(undefined);
-          }
+          setNewPoint(undefined);
         }}
         width={bounds.width}
         height={bounds.height}
@@ -624,13 +587,14 @@ export default function Editor({
             {!!newPoint && (
               <>
                 <Circle
-                  stroke="green"
+                  stroke="#3b82f6"
                   strokeWidth={2}
+                  fill="white"
                   x={newPoint.point.x}
                   y={newPoint.point.y}
                   radius={5}
                 />
-
+                {/* 
                 <Text
                   fontSize={11}
                   text={`[${newPoint.index}] ${Math.round(
@@ -638,7 +602,7 @@ export default function Editor({
                   )},${Math.round(newPoint.point.y)} `}
                   x={newPoint.point.x}
                   y={newPoint.point.y - 14}
-                ></Text>
+                ></Text> */}
               </>
             )}
             <Handles
@@ -647,6 +611,9 @@ export default function Editor({
               }}
               handles={commands}
               selectedHandles={selectedHandles}
+              onActivate={() => {
+                setIsDragging(true);
+              }}
               onDrag={(handle) => {
                 const commands = glyph.path.commands;
                 const freshCommands = getFreshCommands();
@@ -848,6 +815,7 @@ export default function Editor({
                 } as HistoryCommandsUpdate;
               }}
               onDragEnd={() => {
+                setIsDragging(false);
                 setGuidelines([]);
                 if (pendingDragHistory.current) {
                   history.addToHistory(pendingDragHistory.current);

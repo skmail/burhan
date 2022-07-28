@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Circle, Line, KonvaNodeEvents, Text, Group } from "react-konva";
 
-import { Command, OnHandleDrag } from "../../types";
+import { Command, OnHandleActivate, OnHandleDrag } from "../../types";
 
 interface Props {
   handle: Command;
@@ -11,6 +11,7 @@ interface Props {
   handles: Command[];
   isSelected?: boolean;
   onSelect: (deselect?: boolean) => void;
+  onActivate: OnHandleActivate;
 }
 
 export default function Handle({
@@ -21,6 +22,7 @@ export default function Handle({
   handles,
   isSelected = false,
   onSelect,
+  onActivate,
 }: Props) {
   const [isHover, setIsHover] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -28,6 +30,7 @@ export default function Handle({
 
   const onMouseDown: KonvaNodeEvents["onMouseDown"] = (e) => {
     onSelect();
+    onActivate(handle);
     e.evt.preventDefault();
     e.evt.stopPropagation();
     let startX = e.evt.pageX;
@@ -79,10 +82,15 @@ export default function Handle({
     stage.container().style.cursor = "default";
   };
 
-  const colors = {
-    quadraticBezierPoint: "blue",
-    quadraticBezier: "pink",
+  const onClick: KonvaNodeEvents["onClick"] = (e) => {
+    if (isDragging) {
+      return;
+    }
+    e.evt.preventDefault();
+    e.evt.stopPropagation();
+    onSelect(!isDraggingStarted);
   };
+
 
   const props = {
     // @ts-ignore
@@ -101,11 +109,7 @@ export default function Handle({
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
-    onClick: (e) => {
-      e.evt.preventDefault();
-      e.evt.stopPropagation();
-      onSelect(!isDraggingStarted);
-    },
+    onClick,
   };
 
   return (
@@ -168,8 +172,7 @@ export default function Handle({
 
       <Circle {...props} radius={4} />
 
-      {/* 
-      <Text
+      {/* <Text
         fontSize={11}
         text={`[${index}] ${Math.round(props.x)}, ${Math.round(props.y)}`}
         x={props.x}
