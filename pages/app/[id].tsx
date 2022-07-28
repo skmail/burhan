@@ -19,6 +19,8 @@ import { findFont, saveFont } from "../../db/database";
 import { useRouter } from "next/router";
 import normalize from "../../utils/normalize";
 import ToOpenType from "../../components/ToOpentype";
+import GlyphInfo from "../../components/GlyphInfo";
+import FontInfo from "../../components/FontInfo";
 
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
@@ -428,6 +430,9 @@ const App: NextPage = () => {
             <option value="angleLength">Angle and length</option>
           </select>
         </div>
+
+        {!!glyph && <GlyphInfo glyph={glyph} />}
+        <FontInfo font={font} />
       </div>
 
       {/* <ImageTest /> */}

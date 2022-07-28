@@ -10,6 +10,9 @@ export default function toOpentype(font: Font) {
 
     const commandIds = [...glyph.path.commands.ids];
 
+    if (!commandIds.length) {
+      continue;
+    }
     while (commandIds.length > 0) {
       const id = commandIds.shift() as string;
       const command = glyph.path.commands.items[id];

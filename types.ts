@@ -55,7 +55,10 @@ interface Glyph {
   bbox: Box;
   advanceWidth: number;
   id: string;
-  character: number
+  character: number;
+  _metrics: {
+    leftBearing: number;
+  };
 }
 
 interface Table<T> {
@@ -72,6 +75,13 @@ export interface Font {
   bbox: Box;
   glyphs: Table<Glyph>;
   unitsPerEm: number;
+
+  postscriptName: string;
+  fullName: string;
+  familyName: string;
+  subfamilyName: string;
+  copyright: string;
+  version: number;
 }
 
 export interface Settings {
