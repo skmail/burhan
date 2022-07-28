@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bounds,
   Command,
@@ -10,6 +10,7 @@ import {
   Point,
   SnapResult,
   OnHandleDrag,
+  Guideline as GuidelineType,
 } from "../../types";
 import { Stage, Layer, Path, Group, Circle, Text } from "react-konva";
 import commandsToPath from "../../utils/commandsToPathData";
@@ -35,13 +36,14 @@ import computeAngle from "../../utils/computeAngle";
 import computeDistance from "../../utils/computeDistance";
 import { Bezier } from "bezier-js";
 import { useKeyboard } from "../../context/KeyboardEventsProvider";
+import useHandleDrag from "./hooks/useHandleDrag";
 
 interface Props {
   font: Omit<Font, "glyphs">;
   glyph: Font["glyphs"]["items"][0];
   onCommandUpdate: OnCommandUpdate;
   onCommandsUpdate: onCommandsUpdate;
-  forceUpdate?: string;
+
   selectedHandles: string[];
   onSelectHandles: (ids: string[]) => void;
   settings: Settings;
@@ -53,17 +55,14 @@ interface Props {
 export default function Editor({
   font,
   glyph,
-  onCommandUpdate,
   onCommandsUpdate,
-  forceUpdate,
+
   selectedHandles,
   onSelectHandles,
   settings,
   history,
   onCommandsAdd,
 }: Props) {
-  const [isDragging, setIsDragging] = useState(false);
-
   const [bounds, setBounds] = useState<Bounds>({
     width: 0,
     height: 0,
@@ -72,12 +71,7 @@ export default function Editor({
   });
 
   const [isHoveringHandle, setIsHoveringHandle] = useState(false);
-  const [guidelines, setGuidelines] = useState<
-    {
-      command: string;
-      points: [number, number, number, number];
-    }[]
-  >([]);
+  const [guidelines, setGuidelines] = useState<GuidelineType[]>([]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -121,7 +115,7 @@ export default function Editor({
     return () => {
       window.removeEventListener("resize", onResize);
     };
-  }, [forceUpdate]);
+  }, []);
 
   const w = font.bbox.width;
   const h = font.bbox.height;
@@ -158,7 +152,7 @@ export default function Editor({
     return data;
   }, [commands]);
 
-  const points = [
+  const points: any[] = [
     {
       id: "baseline",
       command: "baseline",
@@ -215,9 +209,6 @@ export default function Editor({
   }>();
 
   const getSelectedHandlesId = useFresh(selectedHandles);
-  const pendingDragHistory = useRef<
-    HistoryCommandUpdate | HistoryCommandsUpdate
-  >();
 
   const getFreshCommands = useFresh(glyph.path.commands);
 
@@ -233,196 +224,6 @@ export default function Editor({
     }
   }, [newPoint]);
 
-  const onDrag: OnHandleDrag = (handle, options = {}) => {
-    options = {
-      fresh: false,
-      allowSnap: true,
-      ...options,
-    };
-    const freshCommands = getFreshCommands();
-    const commands = options.fresh ? freshCommands : glyph.path.commands;
-
-    const selections = getSelectedHandlesId().reduce((acc, id) => {
-      if (acc.includes(id)) {
-        return acc;
-      }
-      const command = commands.items[id];
-      acc.push(id);
-      const index = commands.ids.indexOf(command.id);
-      if (command.command === "bezierCurveTo") {
-        acc.push(commands.ids[index + 1], commands.ids[index - 1]);
-      } else if (command.command === "lineTo") {
-        const nextPoint = commands.items[commands.ids[index + 1]];
-        if (nextPoint && nextPoint.command === "bezierCurveToCP1") {
-          acc.push(nextPoint.id);
-        }
-      }
-
-      return acc;
-    }, [] as string[]);
-
-    const command = commands.items[handle.id];
-
-    const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
-
-    let xy: PointTuple = [
-      command.args[0] + amountToMove[0],
-      command.args[1] + amountToMove[1],
-    ];
-
-    let snapped: SnapResult = {
-      command: "none",
-      args: xy,
-      fromPoints: [],
-    };
-
-    if (options.allowSnap) {
-      snapped = snap(
-        {
-          ...handle,
-          args: xy,
-        },
-        (points as any).filter((p: any) => !selections.includes(p.id)),
-        scale,
-        scaleWithoutZoom,
-        settings.snapToGrid ? settings.gridSize : 0,
-        settings.snapToOtherPoints
-      );
-
-      if (snapped.command !== "none" && snapped.fromPoints) {
-        setGuidelines(
-          snapped.fromPoints.map((p) => ({
-            command: p.command,
-            points: [snapped.args[0], snapped.args[1], p.args[0], p.args[1]],
-          }))
-        );
-      } else {
-        setGuidelines((lines) => (lines.length ? [] : lines));
-      }
-    }
-
-    const snapDiff = [snapped.args[0] - xy[0], snapped.args[1] - xy[1]];
-
-    xy = snapped.args;
-
-    const newHandles = selections.reduce((acc, id) => {
-      if (acc[id]) {
-        return acc;
-      }
-      const cmd = commands.items[id];
-
-      if (!cmd) {
-        return acc;
-      }
-      let args: PointTuple;
-      if (id === handle.id) {
-        args = xy;
-      } else {
-        args = [
-          cmd.args[0] + amountToMove[0] + snapDiff[0],
-          cmd.args[1] + amountToMove[1] + snapDiff[1],
-        ];
-      }
-
-      acc[id] = {
-        ...cmd,
-        args,
-      };
-
-      const getPoint = (
-        index1: number,
-        index2: number,
-        commands: Font["glyphs"]["items"]["0"]["path"]["commands"],
-        type: Command["command"],
-        args: PointTuple,
-        mirrorType: Settings["vectorMirrorType"]
-      ): Command | undefined => {
-        const pointId = commands.ids[index1];
-        let point = acc[pointId] || commands.items[pointId];
-        const nextPointId = commands.ids[index2];
-        let nextPoint = commands.items[nextPointId];
-
-        if (!nextPoint) {
-          return;
-        }
-        if (nextPoint.command === type) {
-          if (mirrorType === "angleLength") {
-            args = reflect(args, point.args);
-          } else if (mirrorType === "angle") {
-            const angle = computeAngle(point.args, args);
-
-            const d = computeDistance(point.args, nextPoint.args);
-
-            const xx = point.args[0] + d * Math.cos(angle);
-            const yy = point.args[1] + d * Math.sin(angle);
-
-            args = [xx, yy];
-
-            args = reflect(args, point.args, nextPoint.args);
-          } else {
-            return;
-          }
-
-          return {
-            ...nextPoint,
-            args,
-          };
-        }
-      };
-
-      const index = commands.ids.indexOf(cmd.id);
-
-      if (cmd.command === "bezierCurveToCP1") {
-        const nextPoint = getPoint(
-          index - 1,
-          index - 2,
-          freshCommands,
-          "bezierCurveToCP2",
-          args,
-          settings.vectorMirrorType
-        );
-
-        if (nextPoint) {
-          acc[nextPoint.id] = nextPoint;
-        }
-      }
-
-      if (cmd.command === "bezierCurveToCP2") {
-        const nextPoint = getPoint(
-          index + 1,
-          index + 2,
-          freshCommands,
-          "bezierCurveToCP1",
-          args,
-          settings.vectorMirrorType
-        );
-
-        if (nextPoint) {
-          acc[nextPoint.id] = nextPoint;
-        }
-      }
-
-      return acc;
-    }, {} as Record<string, Command>);
-
-    onCommandsUpdate(newHandles);
-
-    pendingDragHistory.current = {
-      type: "commands.update",
-      payload: {
-        old: pendingDragHistory.current
-          ? pendingDragHistory.current.payload.old
-          : Object.keys(newHandles).reduce(
-              (acc, id) => ({
-                ...acc,
-                [id]: glyph.path.commands.items[id],
-              }),
-              {} as Record<string, Command>
-            ),
-        new: newHandles,
-      },
-    } as HistoryCommandsUpdate;
-  };
   useEffect(() => {
     if (
       !keys.ArrowUp &&
@@ -476,9 +277,10 @@ export default function Editor({
         },
         {
           allowSnap: snap,
-          fresh: true,
         }
       );
+
+      onDragEnd();
     };
 
     moveUp();
@@ -499,6 +301,18 @@ export default function Editor({
     settings.gridSize,
   ]);
 
+  const onHandleSelected = useCallback(
+    (id: string) => {
+      if (keys.ShiftLeft && !selectedHandles.includes(id)) {
+        onSelectHandles([...selectedHandles, id]);
+      } else if (selectedHandles.includes(id)) {
+        onSelectHandles(selectedHandles.filter((i) => i !== id));
+      } else {
+        onSelectHandles([id]);
+      }
+    },
+    [selectedHandles, keys.ShiftLeft]
+  );
   useEffect(() => {
     if (!keys.Backspace && !keys.Delete) {
       return;
@@ -574,6 +388,19 @@ export default function Editor({
       items,
     });
   }, [keys.Backspace, keys.Delete]);
+
+  const { onDrag, onDragEnd, isDragging, setIsDragging } = useHandleDrag({
+    scaleWithoutZoom,
+    scale,
+    settings,
+    commands: glyph.path.commands,
+    selectedHandles,
+    snapPoints: points,
+    setGuidelines,
+    onCommandsUpdate,
+    history,
+  });
+
   return (
     <div
       className="bg-gray-100 relative"
@@ -973,15 +800,7 @@ export default function Editor({
               </>
             )}
             <Handles
-              onSelect={(id) => {
-                if (keys.ShiftLeft && !selectedHandles.includes(id)) {
-                  onSelectHandles([...selectedHandles, id]);
-                } else if (selectedHandles.includes(id)) {
-                  onSelectHandles(selectedHandles.filter((i) => i !== id));
-                } else {
-                  onSelectHandles([id]);
-                }
-              }}
+              onSelect={onHandleSelected}
               onHover={(isHover) => {
                 setIsHoveringHandle(isHover);
                 setNewPoint(undefined);
@@ -992,14 +811,7 @@ export default function Editor({
                 setIsDragging(true);
               }}
               onDrag={onDrag}
-              onDragEnd={() => {
-                setIsDragging(false);
-                setGuidelines([]);
-                if (pendingDragHistory.current) {
-                  history.addToHistory(pendingDragHistory.current);
-                  pendingDragHistory.current = undefined;
-                }
-              }}
+              onDragEnd={onDragEnd}
             />
           </Group>
 

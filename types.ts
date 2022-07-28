@@ -18,7 +18,6 @@ export type OnHandleDrag = (
   handle: Command,
   options?: {
     allowSnap?: boolean;
-    fresh?: boolean;
   }
 ) => void;
 export type OnCommandUpdate = (command: Command) => void;
@@ -63,6 +62,7 @@ interface Table<T> {
   items: Record<string, T>;
 }
 export interface Font {
+  id: string;
   ascent: number;
   descent: number;
   capHeight: number;
@@ -94,4 +94,9 @@ export interface SnapResult {
     command: string;
     args: PointTuple;
   }[];
+}
+
+export interface Guideline {
+  command: string;
+  points: [number, number, number, number];
 }

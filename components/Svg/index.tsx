@@ -1,34 +1,43 @@
-import { memo } from "react";
-import { Font, Command } from "../../types";
+import { memo, useMemo } from "react";
+import { Font } from "../../types";
 import commandsToPathData from "../../utils/commandsToPathData";
 import computePathCommands from "../../utils/computePathCommands";
 
 interface Props {
-  font: Omit<Font, "glyphs">;
   glyph: Font["glyphs"]["items"][0];
   metrics?: boolean;
   fill?: boolean;
   width?: number;
   height?: number;
+  unitsPerEm: number;
+  bHeight: number;
 }
 
-function Svg({ glyph, font, fill = false, width = 50, height = 50 }: Props) {
+function Svg({
+  glyph,
+  unitsPerEm,
+  fill = false,
+  width = 50,
+  height = 50,
+  bHeight,
+}: Props) {
+  const scale = (1 / unitsPerEm) * Math.min(width, height);
 
-  const scale = (1 / font.unitsPerEm) * Math.min(width, height);
-
-  const baseline = height / 2 + ((font.bbox.maxY + font.descent) / 2) * scale;
+  const baseline = height / 2 + (bHeight / 2) * scale;
   const x = width / 2 - (glyph.bbox.width / 2) * scale;
-  const data = commandsToPathData(
-    computePathCommands(
-      glyph.path.commands.ids.map((id) => glyph.path.commands.items[id]),
-      x,
-      baseline,
-      scale
-    )
-  );
+  const data = useMemo(() => {
+    return commandsToPathData(
+      computePathCommands(
+        glyph.path.commands.ids.map((id) => glyph.path.commands.items[id]),
+        x,
+        baseline,
+        scale
+      )
+    );
+  }, []);
+
   const viewBox = `0 0  ${width} ${height}`;
 
-  // console.log(data)
   return (
     <svg width={width} height={height} viewBox={viewBox}>
       <path

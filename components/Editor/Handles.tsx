@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Command, OnHandleActivate, OnHandleDrag } from "../../types";
 import Handle from "./Handle";
 
@@ -53,5 +53,6 @@ export default function Handles({
 
     return acc;
   }, [] as any[]);
+
   return <>{output}</>;
 }

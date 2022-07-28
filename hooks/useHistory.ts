@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { History } from "../types/History";
 
 export default function useHistory(
@@ -23,21 +23,21 @@ export default function useHistory(
   fresh.current.history = history;
   fresh.current.apply = apply;
 
-  const redo = () => {
+  const redo = useCallback(() => {
     fresh.current.apply(
       fresh.current.history[fresh.current.currentIndex + 1],
       "new"
     );
     setCurrentIndex((index) => index + 1);
-  };
+  }, []);
 
-  const undo = () => {
+  const undo = useCallback(() => {
     fresh.current.apply(
       fresh.current.history[fresh.current.currentIndex],
       "old"
     );
     setCurrentIndex(fresh.current.currentIndex - 1);
-  };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -61,18 +61,24 @@ export default function useHistory(
     };
   }, []);
 
-  return {
-    history,
-    canRedo,
-    canUndo,
-    addToHistory: (item: History) => {
-      setHistory((history) => {
-        history = [...history.slice(0, fresh.current.currentIndex + 1), item];
-        setCurrentIndex(history.length - 1);
-        return history;
-      });
-    },
-    redo,
-    undo,
-  };
+  const addToHistory = useCallback((item: History) => {
+    setHistory((history) => {
+      history = [...history.slice(0, fresh.current.currentIndex + 1), item];
+      setCurrentIndex(history.length - 1);
+      return history;
+    });
+  }, []);
+
+  const result = useMemo(
+    () => ({
+      history,
+      canRedo,
+      canUndo,
+      addToHistory,
+      redo,
+      undo,
+    }),
+    [history, canRedo, canUndo, addToHistory, redo, undo]
+  );
+  return result;
 }

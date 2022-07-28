@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Circle, Line, KonvaNodeEvents, Text, Group, Rect } from "react-konva";
+
 import useFresh from "../../hooks/useFresh";
 
 import { Command, OnHandleActivate, OnHandleDrag, Vector } from "../../types";
@@ -38,30 +39,32 @@ export default function Handle({
   }, [isHover]);
 
   const getIsSelected = useFresh(isSelected);
-  const startPosition = useRef<Vector>(vector2());
   const getIsDraggingStarted = useFresh(isDraggingStarted);
+  const getIsDragging = useFresh(isDragging);
 
-  const onMouseMove = (e: MouseEvent) => {
+  const startPosition = useRef<Vector>(vector2());
+
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const movedX = e.clientX - startPosition.current.x;
     const movedY = startPosition.current.y - e.clientY;
+
     if (Math.abs(movedX) > 1 && Math.abs(movedY) > 1) {
       setIsDragging(true);
       setIsDraggingStarted(true);
     }
 
-    e.preventDefault();
-    e.stopPropagation();
-
     onDrag({
       ...handle,
       args: [movedX, movedY],
     });
-  };
+  }, []);
 
   const onMouseUp = () => {
     if (!getIsDraggingStarted()) {
       onSelect();
-      console.log(isDraggingStarted);
     }
     setIsDragging(false);
     setIsHover(false);
@@ -71,7 +74,7 @@ export default function Handle({
     setTimeout(() => setIsDraggingStarted(false), 500);
   };
 
-  const onMouseDown: KonvaNodeEvents["onMouseDown"] = (e) => {
+  const onMouseDown = useCallback((e: any) => {
     if (e.evt.button !== 0) {
       return;
     }
@@ -88,18 +91,22 @@ export default function Handle({
 
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
-  };
-  const onMouseEnter: KonvaNodeEvents["onMouseEnter"] = (e) => {
-    setIsHover(true);
-    const stage = e.target.getStage();
+  }, []);
 
-    if (!stage) {
-      return;
-    }
-    document.body.style.cursor = "pointer";
-  };
-  const onMouseLeave: KonvaNodeEvents["onMouseLeave"] = (e) => {
-    if (isDragging) {
+  const onMouseEnter: KonvaNodeEvents["onMouseEnter"] = useCallback(
+    (e: any) => {
+      setIsHover(true);
+      const stage = e.target.getStage();
+
+      if (!stage) {
+        return;
+      }
+      document.body.style.cursor = "pointer";
+    },
+    []
+  );
+  const onMouseLeave = useCallback((e: any) => {
+    if (getIsDragging()) {
       return;
     }
     setIsHover(false);
@@ -109,8 +116,9 @@ export default function Handle({
     if (!stage) {
       return;
     }
+
     document.body.style.cursor = "default";
-  };
+  }, []);
 
   const props = {
     // @ts-ignore
@@ -129,7 +137,7 @@ export default function Handle({
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
-    // onMouseUp,
+    onMouseUp,
   };
 
   const isControlPoint = ["bezierCurveToCP1", "bezierCurveToCP2"].includes(
