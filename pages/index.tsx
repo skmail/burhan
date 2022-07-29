@@ -26,7 +26,7 @@ export default function Home() {
       } else if (url) {
         fd.append("url", url);
       }
-      const response = await axios.post("http://localhost:8080/font", fd, {
+      const response = await axios.post("https://fonts-api.cssgears.com/font", fd, {
         headers: {
           "Content-Type": "multipart/form-data",
           Accept: "*/*",
@@ -49,9 +49,9 @@ export default function Home() {
   const samples = [
     ["0", "Font sample 1 [EN]"],
     ["1", "Font sample 2 [EN]"],
-    ["2", "Font sample 3 [LATINE]"],
-    ["3", "Font sample 4 [AR]"],
-    ["4", "Font sample 5 [CH]"],
+    ["2", "Font sample 4 [AR]"],
+    ["3", "Font sample 5 [JP]"],
+    ["4", "Font sample 3 [LATINE]"],
   ];
 
   const [fontUrl, setFontUrl] = useState("");
