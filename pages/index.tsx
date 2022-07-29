@@ -7,7 +7,10 @@ import { saveFont } from "../db/database";
 import normalizeFont from "../utils/normalizeFont";
 import { Popover, Transition } from "@headlessui/react";
 import validator from "validator";
+
 export default function Home() {
+  
+
   const fontLoader = useMutation(
     async ({
       file,
@@ -26,7 +29,7 @@ export default function Home() {
       } else if (url) {
         fd.append("url", url);
       }
-      const response = await axios.post("https://fonts-api.cssgears.com/font", fd, {
+      const response = await axios.post("/font", fd, {
         headers: {
           "Content-Type": "multipart/form-data",
           Accept: "*/*",
