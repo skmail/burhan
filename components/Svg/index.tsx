@@ -5,25 +5,24 @@ import computePathCommands from "../../utils/computePathCommands";
 
 interface Props {
   glyph: Font["glyphs"]["items"][0];
-  metrics?: boolean;
   fill?: boolean;
-  width?: number;
-  height?: number;
+
   unitsPerEm: number;
-  bHeight: number;
+  base: number;
 }
 
 function Svg({
   glyph,
   unitsPerEm,
-  fill = false,
-  width = 50,
-  height = 50,
-  bHeight,
+  fill = false, 
+  base,
 }: Props) {
-  const scale = (1 / unitsPerEm) * Math.min(width, height);
-  const baseline = height / 2 + (bHeight / 2) * scale;
-  const x = width / 2 - (glyph.bbox.width / 2) * scale;
+  const scale =
+    (1 / unitsPerEm) * Math.min(glyph.bbox.height, glyph.bbox.width);
+  const scaleX = scale;
+  const baseline = (base + 0) * scale;
+  const x = (0 - glyph.bbox.minX) * scaleX;
+
   const data = useMemo(() => {
     return commandsToPathData(
       computePathCommands(
@@ -35,13 +34,16 @@ function Svg({
     );
   }, []);
 
-  const viewBox = `0 0  ${width} ${height}`;
+  const zoom = 0.8;
+  const xx = Math.round((glyph.bbox.maxX - glyph.bbox.minX) * scaleX);
+  const yy = Math.round((base) * scale);
+  const viewBox = `0 0  ${xx + xx * (zoom - 1)} ${yy + yy * ( 1 - zoom)}`;
 
   return (
-    <svg width={width} height={height} viewBox={viewBox}>
+    <svg width={"100%"} height={"100%"} viewBox={viewBox}>
       <path
-        fill={fill ? "black" : "none"}
-        stroke="black"
+        fill={fill ? "currentColor" : "none"}
+        stroke="currentColor"
         strokeWidth={fill ? 0 : 2}
         d={data}
       />

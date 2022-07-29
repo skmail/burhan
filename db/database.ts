@@ -33,5 +33,15 @@ export async function findFont(id: string): Promise<Font> {
 
   const value = await tx.store.get(id);
 
-  return value;
+  return value
+  const index = 33;
+  return {
+    ...value,
+    glyphs: {
+      ids: [value.glyphs.ids[index]],
+      items: {
+        [value.glyphs.ids[index]]: value.glyphs.items[value.glyphs.ids[index]],
+      },
+    },
+  };
 }

@@ -270,8 +270,10 @@ const App: NextPage = () => {
         </div>
       </div>
 
-      <div className="w-[240px] flex overflow-hidden border-r  border-slate-400 shadow-sm">
-        <div className={`flex gap-2 flex-wrap p-4 h-screen  overflow-y-auto`}>
+      <div className="w-[240px] overflow-hidden border-r  border-gray-300 shadow-xl">
+        <div
+          className={`grid grid-cols-4 w-full flex-wrap pr-4 h-screen  overflow-y-auto`}
+        >
           {glyphs.ids.map((id) => {
             const glyph = glyphs.items[id];
             return (
@@ -285,20 +287,17 @@ const App: NextPage = () => {
                     },
                   });
                 }}
-                className={` p-0.5 ${
+                className={` p-0.5 h-14 flex items-center justify-center relative hover:z-50 ring-inset ${
                   selected === glyph.id
-                    ? "ring ring-sky-500"
-                    : "bg-slate-200 hover:ring hover:ring-sky-500"
-                } relative cursor-pointer rounded`}
+                    ? "ring  bg-blue-500 text-white ring-blue-500 z-20"
+                    : "bg-slate-50 hover:ring hover:ring-blue-500"
+                } relative cursor-pointer border-[0.5px] border-gray-200`}
               >
                 <Svg
-                  metrics={false}
                   unitsPerEm={font.unitsPerEm}
-                  bHeight={font.bbox.maxY + font.descent}
                   glyph={glyph}
-                  width={40}
-                  height={40}
                   fill
+                  base={font.ascent - font.descent}
                 />
               </div>
             );
