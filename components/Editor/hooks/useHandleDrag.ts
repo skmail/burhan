@@ -87,7 +87,6 @@ export default function useHandleDrag({
 
     const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
 
-    // console.log(command.args[0], handle.args[0]);
     let xy: PointTuple = [
       command.args[0] + amountToMove[0],
       command.args[1] + amountToMove[1],

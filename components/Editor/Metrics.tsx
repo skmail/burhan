@@ -94,7 +94,6 @@ export default function Metrics({
     },
   ];
 
-  // console.log(metrics)
   return (
     <>
       {metrics.map((metric) => (

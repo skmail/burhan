@@ -140,17 +140,12 @@ export default function Editor({
     [glyph.path.commands]
   );
 
-  const commands = useMemo(() => {
-    return computePathCommands(commandsArray, x, baseline, scale);
-  }, [commandsArray, x, baseline, scale]);
+  const commands = useMemo(
+    () => computePathCommands(commandsArray, x, baseline, scale),
+    [commandsArray, x, baseline, scale]
+  );
 
-  const data = useMemo(() => {
-    const data = commandsToPath(commands);
-
-    // console.log(data)
-
-    return data;
-  }, [commands]);
+  const data = useMemo(() => commandsToPath(commands), [commands]);
 
   const points: any[] = [
     {
@@ -364,18 +359,18 @@ export default function Editor({
           const nextIndex = index + 1;
           const next = _items[ids[nextIndex]];
 
-          if (!next) {
-            continue;
-          }
+          if (next) {
+            if ("bezierCurveToCP1" === next.command) {
+              result.push(ids[nextIndex + 1], ids[nextIndex + 2]);
+            }
 
-          if ("bezierCurveToCP1" === next.command) {
-            result.push(ids[nextIndex + 1], ids[nextIndex + 2]);
+            if (next.command !== "closePath") {
+              items[next.id] = {
+                ...next,
+                command: "moveTo",
+              };
+            }
           }
-
-          items[next.id] = {
-            ...next,
-            command: "moveTo",
-          };
       }
 
       ids = ids.filter((id) => !result.includes(id));
@@ -723,7 +718,6 @@ export default function Editor({
                 )
               );
             } else {
-              // console.log(command.command);
               continue;
             }
 

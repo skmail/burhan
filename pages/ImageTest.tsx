@@ -32,29 +32,7 @@ export default function ImageTest() {
           points[`${x},${y}`] = j;
         }
       }
-      // console.log(points, colors);
     };
-
-    //   while (image.data[channel] != null) {
-    //     let x = i % image.width;
-    //     let y = Math.floor(i / image.width);
-    //     let r = image.data[channel++];
-    //     let g = image.data[channel++];
-    //     let b = image.data[channel++];
-    //     let a = image.data[channel++];
-    //     let rgba = `rgba(${r},${g},${b},${a})`;
-
-    //     let j = colors.indexOf(rgba);
-    //     if (j === -1) {
-    //       j = colors.length;
-    //       colors.push(rgba);
-    //     }
-
-    //     points[`${x},${y}`] = j;
-
-    //     i++;
-    //   }
-    // };
 
     image.src = "/font_rend.png";
   }, []);

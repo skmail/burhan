@@ -31,14 +31,12 @@ export default function snap(
   if (snapToOtherPoints) {
     for (let point of points) {
       if (point.id === handle.id) {
-        // console.log("termninated by same point");
         continue;
       }
       if (
         point.args[0] === handle.args[0] &&
         point.args[1] === handle.args[1]
       ) {
-        // console.log("terminated by dims");
         continue;
       }
 

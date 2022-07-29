@@ -15,7 +15,7 @@ export default memo(function Button({
     cls =
       "bg-zinc-800 text-white enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50";
   } else {
-    cls = "bg-blue-500 text-white hover:ring hover:ring-gray-300 shadow ";
+    cls = "bg-blue-500 disabled:opacity-50 text-white enabled:hover:ring enabled:hover:ring-gray-300 shadow ";
   }
 
   return (
