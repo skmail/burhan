@@ -7,7 +7,8 @@ export default function computePathCommands(
   y = 0,
   scale = 1,
   scaleX = scale
-): Command[] {
+): Command[] { 
+
   return commands.map((command) => {
     if (command.command === "closePath") {
       return command;

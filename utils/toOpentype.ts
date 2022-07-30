@@ -50,7 +50,8 @@ export default function toOpentype(font: Font) {
 
     const opentypeGlyph = new opentype.Glyph({
       name: glyph.string,
-      unicode: glyph.character,
+      unicode: glyph.codePoints[0],
+      unicodes: glyph.codePoints,
       advanceWidth: glyph.advanceWidth,
       path,
     });
@@ -91,7 +92,7 @@ export default function toOpentype(font: Font) {
   const dataView = new DataView(arrayBuffer);
   const blob = new Blob([dataView], { type: "font/opentype" });
 
-  const url = window.URL.createObjectURL(blob);
+  const url = globalThis.URL.createObjectURL(blob);
 
   // openTypeFont.download()
 

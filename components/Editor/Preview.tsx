@@ -8,37 +8,38 @@ interface Props {
   commands: Command[];
   font: Omit<Font, "glyphs">;
   viewMode: Settings["viewMode"];
+  data: string;
 }
-export default function Preview({ glyph, commands, font, viewMode }: Props) {
-  const width = 200;
-  const height = 200;
-  const h = glyph.bbox.height;
-  const w = glyph.bbox.width;
-
-  const zoom = Math.min(h > w ? w / h : h / w, 0.9);
+export default function Preview({ glyph, data, font, viewMode }: Props) {
+  const size = 200;
   const scale =
-    (1 / (font.ascent - font.descent)) * Math.min(height, width) * zoom;
-  const x = width / 2 - (glyph.advanceWidth / 2) * scale;
+    (1 / Math.max(font.ascent - font.descent, glyph.bbox.width)) * size;
 
-  const baseline =
-    height / 2 + ((glyph.bbox.minY + glyph.bbox.maxY) / 2) * scale;
+  const h = (glyph.bbox.maxY + glyph.bbox.minY) * scale;
+  const w = (glyph.bbox.maxX + glyph.bbox.minX) * scale;
+
+  const x = size / 2 - (glyph.bbox.width / 2) * scale;
+
+  const y = size / 2 + ((glyph.bbox.minY + glyph.bbox.maxY) / 2) * scale;
 
   return (
     <Group x={15} y={15}>
       <Rect
         fill="#fff"
-        width={200}
-        height={200}
+        width={size}
+        height={size}
         shadowBlur={40}
         shadowColor="#cbd5e1"
         cornerRadius={15}
       />
       <Path
-        data={commandsToPathData(
-          computePathCommands(commands, x, baseline, scale)
-        )}
+        x={x}
+        y={y}
+        scaleX={scale}
+        scaleY={-scale}
+        data={data}
         fill={viewMode === "solid" ? "black" : undefined}
-        strokeWidth={viewMode === "outline" ? 2 : undefined}
+        strokeWidth={viewMode === "outline" ? 2 / scale : undefined}
         stroke={viewMode === "outline" ? "black" : undefined}
       />
     </Group>

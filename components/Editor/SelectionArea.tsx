@@ -1,16 +1,26 @@
 import { RefObject, useEffect, useRef, useState } from "react";
+import useFresh from "../../hooks/useFresh";
 import { Bounds, Command } from "../../types";
 import onLeftButton from "../../utils/onLeftButton";
+import scaleX from "../../utils/scaleX";
+import scaleY from "../../utils/scaleY";
+import vector from "../../utils/vector";
 
 interface Props {
   workspaceRef: RefObject<HTMLDivElement>;
   handles: Command[];
   onSelectHandles: (ids: string[]) => void;
+  scale: number;
+  baseline: number;
+  x: number;
 }
 export default function SelectionArea({
   workspaceRef,
   handles,
   onSelectHandles,
+  scale,
+  baseline,
+  x,
 }: Props) {
   const [bounds, setBounds] = useState<Bounds>({
     x: 0,
@@ -19,8 +29,7 @@ export default function SelectionArea({
     height: 0,
   });
 
-  const handlesRef = useRef<Command[]>([]);
-  handlesRef.current = handles;
+  const getHandles = useFresh(handles);
 
   useEffect(() => {
     if (!workspaceRef.current) {
@@ -29,7 +38,10 @@ export default function SelectionArea({
     let startX = 0;
     let startY = 0;
     let box: DOMRect;
+    let handles = getHandles();
+
     const onMousedown = onLeftButton((e: MouseEvent) => {
+      handles = getHandles();
       if (!workspaceRef.current) {
         return;
       }
@@ -44,29 +56,32 @@ export default function SelectionArea({
       let width = e.clientX - startX;
       let height = e.clientY - startY;
 
-      let x = 0;
-      let y = 0;
+      const position = vector();
+
       if (width < 0) {
-        x = e.clientX - box.x;
+        position.x = e.clientX - box.x;
       } else {
-        x = startX - box.x;
+        position.x = startX - box.x;
       }
 
       if (height < 0) {
-        y = e.clientY - box.y;
+        position.y = e.clientY - box.y;
       } else {
-        y = startY - box.y;
+        position.y = startY - box.y;
       }
 
       width = Math.max(Math.abs(width), 0);
       height = Math.max(Math.abs(height), 0);
 
-      const found = handlesRef.current.filter((handle) => {
+      const found = handles.filter((handle) => {
+        const scaledX = scaleX(handle.args[0], x, scale);
+        const scaledY = scaleY(handle.args[1], baseline, scale);
+
         if (
-          handle.args[0] > x &&
-          handle.args[0] < x + width &&
-          handle.args[1] > y &&
-          handle.args[1] < y + height
+          scaledX > position.x &&
+          scaledX < position.x + width &&
+          scaledY > position.y &&
+          scaledY < position.y + height
         ) {
           return true;
         }
@@ -76,8 +91,8 @@ export default function SelectionArea({
       setBounds({
         width,
         height,
-        x: x,
-        y: y,
+        x: position.x,
+        y: position.y,
       });
       onSelectHandles(found.map((h) => h.id));
     };
@@ -93,7 +108,7 @@ export default function SelectionArea({
     };
 
     workspaceRef.current?.addEventListener("mousedown", onMousedown);
-  }, []);
+  }, [scale, x, baseline]);
 
   if (!bounds.width || !bounds.height) {
     return null;

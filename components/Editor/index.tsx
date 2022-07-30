@@ -1,58 +1,48 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bounds,
   Command,
   Font,
-  OnCommandUpdate,
   onCommandsUpdate,
   PointTuple,
   Settings,
-  Point,
-  SnapResult,
-  OnHandleDrag,
   Guideline as GuidelineType,
+  OnCommandsAdd,
 } from "../../types";
-import { Stage, Layer, Path, Group, Circle, Text } from "react-konva";
+import { Stage, Layer, Path, Group } from "react-konva";
 import commandsToPath from "../../utils/commandsToPathData";
 import Metrics from "./Metrics";
-import computePathCommands from "../../utils/computePathCommands";
 import Handles from "./Handles";
 import { MinusIcon, PlusIcon } from "@heroicons/react/solid";
 import PanningArea from "./PanningArea";
-import snap from "../../utils/snap";
 import Guideline from "./Guideline";
 import Preview from "./Preview";
 import Button from "../Button";
 import SelectionArea from "./SelectionArea";
 import Grid from "./Grid";
-import {
-  HistoryCommandsUpdate,
-  HistoryCommandUpdate,
-  HistoryManager,
-} from "../../types/History";
-import reflect from "../../utils/reflect";
+import { HistoryManager } from "../../types/History";
 import useFresh from "../../hooks/useFresh";
-import computeAngle from "../../utils/computeAngle";
-import computeDistance from "../../utils/computeDistance";
-import { Bezier } from "bezier-js";
 import { useKeyboard } from "../../context/KeyboardEventsProvider";
 import useHandleDrag from "./hooks/useHandleDrag";
+import useDrawingPen from "./hooks/useDrawingPen";
+import useBounnds from "./hooks/useBounds";
+import useZoom from "./hooks/useZoom";
+
+import useHighlightNewPoint from "./hooks/useHighlightNewPoint";
+import Handle from "./Handle";
+import useInsertPoint from "./hooks/useInsertPoint";
 
 interface Props {
   font: Omit<Font, "glyphs">;
   glyph: Font["glyphs"]["items"][0];
-  onCommandUpdate: OnCommandUpdate;
   onCommandsUpdate: onCommandsUpdate;
 
   selectedHandles: string[];
   onSelectHandles: (ids: string[]) => void;
   settings: Settings;
   history: HistoryManager;
-  onCommandsAdd: (
-    table: Font["glyphs"]["items"]["0"]["path"]["commands"]
-  ) => void;
+  onCommandsAdd: OnCommandsAdd;
 }
-export default function Editor({
+function Editor({
   font,
   glyph,
   onCommandsUpdate,
@@ -63,64 +53,27 @@ export default function Editor({
   history,
   onCommandsAdd,
 }: Props) {
-  const [bounds, setBounds] = useState<Bounds>({
-    width: 0,
-    height: 0,
-    x: 0,
-    y: 0,
-  });
+  const [hoveredCommands, setHoveredCommands] = useState<string[]>([]);
+  const [activeCommands, setActiveCommands] = useState<string[]>([]);
 
   const [isHoveringHandle, setIsHoveringHandle] = useState(false);
+
   const [guidelines, setGuidelines] = useState<GuidelineType[]>([]);
 
   const ref = useRef<HTMLDivElement>(null);
+  const bounds = useBounnds(ref);
 
   const [pan, setPan] = useState<PointTuple>([0, 0]);
 
-  const updateZoom = (value: number) => {
-    setNewPoint(undefined);
-    setZoom((zoom) => Math.min(50, Math.max(zoom + value, 0.1)));
-  };
-
-  useEffect(() => {
-    if (!ref.current || !ref.current.parentElement) {
-      return;
-    }
-    const parent = ref.current.parentElement;
-
-    setBounds((bounds) => ({
-      ...bounds,
-      width: parent.offsetWidth,
-      height: parent.offsetHeight,
-    }));
-
-    const onResize = () => {
-      setBounds((bounds) => ({
-        ...bounds,
-        width: parent.offsetWidth,
-        height: parent.offsetHeight,
-      }));
-    };
-
-    window.addEventListener("resize", onResize);
-
-    ref.current.addEventListener("wheel", (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const ZOOM_SENSITIVITY = 500;
-      const zoomAmount = -(e.deltaY / ZOOM_SENSITIVITY);
-      updateZoom(zoomAmount);
-    });
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-    };
-  }, []);
-
-  const w = font.bbox.width;
-  const h = font.bbox.height;
-
-  const [zoom, setZoom] = useState(0.9);
+  const {
+    zoom,
+    updateZoom,
+    reset: resetZoom,
+  } = useZoom({
+    workspaceRef: ref,
+    setPan,
+    pan,
+  });
 
   const width = bounds.width;
   const height = bounds.height;
@@ -128,6 +81,7 @@ export default function Editor({
   const scaleWithoutZoom =
     (1 / Math.max(font.ascent - font.descent, glyph.bbox.width)) *
     Math.min(height, width);
+
   const scale = scaleWithoutZoom * zoom;
 
   const x = width / 2 + pan[0] - (glyph.bbox.width / 2) * scale;
@@ -140,12 +94,7 @@ export default function Editor({
     [glyph.path.commands]
   );
 
-  const commands = useMemo(
-    () => computePathCommands(commandsArray, x, baseline, scale),
-    [commandsArray, x, baseline, scale]
-  );
-
-  const data = useMemo(() => commandsToPath(commands), [commands]);
+  const data = useMemo(() => commandsToPath(commandsArray), [commandsArray]);
 
   const points: any[] = [
     {
@@ -183,41 +132,18 @@ export default function Editor({
       command: "capHeight",
       args: [0, font.capHeight],
     },
-    ...commands.map((handle) => {
-      return {
-        ...handle,
-        args: [
-          (handle.args[0] - x) / scale,
-          (baseline - handle.args[1]) / scale,
-        ],
-      };
-    }),
+    ...commandsArray,
   ];
 
   const toCanvasPoint = (_x: number, _y: number) => {
     return [x + _x * scale, baseline - _y * scale];
   };
 
-  const [newPoint, setNewPoint] = useState<{
-    command: Command;
-    point: Point;
-  }>();
-
   const getSelectedHandlesId = useFresh(selectedHandles);
 
   const getFreshCommands = useFresh(glyph.path.commands);
 
   const { keys } = useKeyboard();
-
-  const getKeyboardKeys = useFresh(keys);
-
-  useEffect(() => {
-    if (!newPoint) {
-      document.body.style.cursor = "";
-    } else {
-      document.body.style.cursor = "url(/icons/pen-add.svg), auto";
-    }
-  }, [newPoint]);
 
   useEffect(() => {
     if (
@@ -308,6 +234,7 @@ export default function Editor({
     },
     [selectedHandles, keys.ShiftLeft]
   );
+
   useEffect(() => {
     if (!keys.Backspace && !keys.Delete) {
       return;
@@ -326,6 +253,7 @@ export default function Editor({
     const items: Record<string, Command> = {};
 
     let ids = [...commands.ids];
+    let _items: Record<string, Command> = { ...commands.items };
 
     while (queue.length > 0) {
       const id = queue.shift() as string;
@@ -334,10 +262,6 @@ export default function Editor({
         continue;
       }
 
-      const _items = {
-        ...commands.items,
-        ...items,
-      };
       const command = _items[id];
       const index = ids.indexOf(id);
 
@@ -358,7 +282,6 @@ export default function Editor({
           result.push(id);
           const nextIndex = index + 1;
           const next = _items[ids[nextIndex]];
-
           if (next) {
             if ("bezierCurveToCP1" === next.command) {
               result.push(ids[nextIndex + 1], ids[nextIndex + 2]);
@@ -371,6 +294,26 @@ export default function Editor({
               };
             }
           }
+      }
+
+      _items = {
+        ...commands.items,
+        ...items,
+      };
+
+      ids = ids.filter((id) => !result.includes(id));
+
+      // heal the path
+
+      for (let index = 0; index < ids.length; index++) {
+        const prev = _items[ids[index - 1]];
+
+        if (
+          _items[ids[index]].command === "closePath" &&
+          (!prev || prev.command === "closePath")
+        ) {
+          result.push(ids[index]);
+        }
       }
 
       ids = ids.filter((id) => !result.includes(id));
@@ -396,6 +339,64 @@ export default function Editor({
     history,
   });
 
+  const { isDrawing, data: drawingData } = useDrawingPen({
+    x,
+    baseline,
+    scale,
+    workspaceRef: ref,
+    scaleWithoutZoom,
+    onCommandsAdd: onCommandsAdd,
+    commands: glyph.path.commands,
+  });
+
+  const { highlightNewPoint, newPoint, resetNewPoint, getNewPoint } =
+    useHighlightNewPoint({
+      x,
+      scale,
+      baseline,
+      commands: glyph.path.commands,
+    });
+
+  const insertPoint = useInsertPoint({
+    commands: glyph.path.commands,
+    onCommandsAdd: onCommandsAdd,
+  });
+
+  const onHandleHover = useCallback((isHover: boolean) => {
+    setIsHoveringHandle(isHover);
+    resetNewPoint();
+  }, []);
+
+  const onHandleActivate = useCallback(
+    (id: string) => {
+      if (isDrawing) {
+        const command: Command = {
+          id: String(Math.random()),
+          command: "closePath",
+          // @ts-ignore
+          args: [],
+        };
+
+        onCommandsAdd({
+          ids: [...getFreshCommands().ids, command.id],
+          items: {
+            [command.id]: command,
+          },
+        });
+        return;
+      }
+      setIsDragging(true);
+      setActiveCommands((ids) => {
+        return [...ids, id];
+      });
+    },
+    [isDrawing]
+  );
+
+  const onCommandHover = useCallback((ids: string[]) => {
+    setHoveredCommands(ids);
+  }, []);
+
   return (
     <div
       className="bg-gray-100 relative"
@@ -414,7 +415,7 @@ export default function Editor({
           <Button
             onClick={() => {
               setPan([0, 0]);
-              setZoom(0.9);
+              resetZoom();
             }}
           >
             <svg
@@ -446,8 +447,11 @@ export default function Editor({
         onSelectHandles={(ids) => {
           onSelectHandles(ids);
         }}
-        handles={commands}
+        handles={commandsArray}
         workspaceRef={ref}
+        x={x}
+        baseline={baseline}
+        scale={scale}
       />
 
       <Grid
@@ -461,297 +465,17 @@ export default function Editor({
         ]}
       />
       <Stage
-        onMouseDown={(e) => {
-          if (!newPoint) {
-            return;
-          }
-
-          function insert<T>(arr: T[], index: number, newItem: T[], to = 0) {
-            return [
-              // part of the array before the specified index
-              ...arr.slice(0, index),
-              // inserted item
-              ...newItem,
-              // part of the array after the specified index
-              ...arr.slice(index + to),
-            ];
-          }
-
-          const toX = (v: number) => (v - x) / scale;
-          const toY = (v: number) => (baseline - v) / scale;
-
-          const toX1 = (v: number) => v;
-          const toY1 = (v: number) => v;
-
-          const toBzCommands = (p1: Point, p2: Point, p3: Point) => {
-            return [
-              {
-                id: String(Math.random()),
-                command: "bezierCurveToCP1",
-                //@ts-ignore
-                args: [toX1(p1.x), toY1(p1.y)],
-              },
-              {
-                id: String(Math.random()),
-                command: "bezierCurveToCP2",
-                //@ts-ignore
-
-                args: [toX1(p2.x), toY1(p2.y)],
-              },
-              {
-                id: String(Math.random()),
-                command: "bezierCurveTo",
-                //@ts-ignore
-                args: [toX1(p3.x), toY1(p3.y)],
-              },
-            ];
-          };
-
-          const freshCommands = getFreshCommands();
-          const index = freshCommands.ids.indexOf(newPoint.command.id);
-          const p = freshCommands.items[newPoint.command.id];
-
-          let bz: Bezier;
-
-          if (newPoint.command.command === "lineTo") {
-            const lineTo: Command = {
-              command: "lineTo",
-              id: String(Math.random()),
-              args: [toX(newPoint.point.x), toY(newPoint.point.y)],
-            };
-
-            const ids = insert(freshCommands.ids, index, [lineTo.id]);
-            onCommandsAdd({
-              ids: ids,
-              items: {
-                [lineTo.id]: lineTo,
-              },
-            });
-          } else if (newPoint.command.command === "closePath") {
-            const index = freshCommands.ids.length - 1;
-            const lineTo: Command = {
-              command: "lineTo",
-              id: String(Math.random()),
-              args: [toX(newPoint.point.x), toY(newPoint.point.y)],
-            };
-
-            const ids = insert(freshCommands.ids, index, [lineTo.id]);
-
-            onCommandsAdd({
-              ids: ids,
-              items: {
-                [lineTo.id]: lineTo,
-              },
-            });
-
-            return;
-          } else if (newPoint.command.command === "bezierCurveTo") {
-            const cp3 = freshCommands.items[freshCommands.ids[index - 3]];
-            const cp1 = freshCommands.items[freshCommands.ids[index - 2]];
-            const cp2 = freshCommands.items[freshCommands.ids[index - 1]];
-
-            if (!cp1 || !cp2) {
-              return;
-            }
-
-            bz = new Bezier(
-              cp3.args[0],
-              cp3.args[1],
-
-              cp1.args[0],
-              cp1.args[1],
-
-              cp2.args[0],
-              cp2.args[1],
-
-              p.args[0],
-              p.args[1]
-            );
-
-            const result = bz.split(newPoint.point.t || 1);
-
-            const newCommands = [
-              ...toBzCommands(
-                result.left.points[1],
-                result.left.points[2],
-                result.left.points[3]
-              ),
-              ...toBzCommands(
-                result.right.points[1],
-                result.right.points[2],
-                result.right.points[3]
-              ),
-            ];
-
-            let ids = insert(
-              freshCommands.ids,
-              index - 2,
-              newCommands.map((c) => c.id),
-              3
-            );
-
-            onCommandsAdd({
-              ids,
-              items: newCommands.reduce(
-                (acc, item) => ({
-                  ...acc,
-                  [item.id]: item,
-                }),
-                {}
-              ),
-            });
-          } else {
-            return;
-          }
-        }}
         onMouseMove={(e) => {
           if (!ref.current || isDragging || isHoveringHandle) {
             return;
           }
-
-          // lift this but not now
           const box = ref.current.getBoundingClientRect();
-          const pos: PointTuple = [
-            e.evt.clientX - box.x,
-            e.evt.clientY - box.y,
-          ];
-
-          const round = getKeyboardKeys()["ShiftLeft"] !== true;
-
-          const computePointOnBezierCurve = (bz: Bezier) => {
-            const m = bz.project({
-              x: pos[0],
-              y: pos[1],
-            });
-
-            const distance = computeDistance([m.x, m.y], pos);
-            let t = m.t || 0;
-
-            if (round) {
-              const inv = 1.0 / 0.25;
-              t = Math.round(t * inv) / inv;
-            }
-
-            const p = bz.get(t);
-
-            return {
-              distance,
-              point: {
-                ...p,
-                t,
-              },
-            };
-          };
-
-          for (let index = 0; index < commands.length; index++) {
-            const aroundPoints: PointTuple[] = [];
-
-            const command = commands[index];
-            const p = [command.args[0], command.args[1]];
-
-            let result: any;
-
-            if (command.command === "lineTo") {
-              const prev = commands[index - 1];
-              const pr: PointTuple = [prev.args[0], prev.args[1]];
-              aroundPoints.push(pr);
-              const space = [(p[0] - pr[0]) / 2, (p[1] - pr[1]) / 2];
-              result = computePointOnBezierCurve(
-                new Bezier(
-                  pr[0],
-                  pr[1],
-
-                  pr[0] + space[0],
-                  pr[1] + space[1],
-
-                  p[0] - space[0],
-                  p[1] - space[1],
-
-                  p[0],
-                  p[1]
-                )
-              );
-            } else if (command.command === "bezierCurveTo") {
-              const cp3 = commands[index - 3];
-              const cp2 = commands[index - 2];
-              const cp1 = commands[index - 1];
-
-              if (!cp1 || !cp2 || !cp3) {
-                continue;
-              }
-              aroundPoints.push(cp1.args, cp2.args, cp3.args);
-
-              result = computePointOnBezierCurve(
-                new Bezier(
-                  cp3.args[0],
-                  cp3.args[1],
-
-                  cp2.args[0],
-                  cp2.args[1],
-
-                  cp1.args[0],
-                  cp1.args[1],
-                  p[0],
-                  p[1]
-                )
-              );
-            } else if (command.command === "closePath") {
-              const pr = commands[0].args;
-              const p = commands[index - 1].args;
-
-              aroundPoints.push(pr, p);
-
-              const space = [(p[0] - pr[0]) / 2, (p[1] - pr[1]) / 2];
-              result = computePointOnBezierCurve(
-                new Bezier(
-                  pr[0],
-                  pr[1],
-
-                  pr[0] + space[0],
-                  pr[1] + space[1],
-
-                  p[0] - space[0],
-                  p[1] - space[1],
-
-                  p[0],
-                  p[1]
-                )
-              );
-            } else {
-              continue;
-            }
-
-            aroundPoints.push(command.args);
-
-            const maxDistance = 5;
-            if (result && result.distance < maxDistance) {
-              const d = aroundPoints.filter((p) => {
-                return (
-                  computeDistance(p, [result.point.x, result.point.y]) * zoom <
-                  maxDistance
-                );
-              });
-
-              if (d.length > 0) {
-                setNewPoint(undefined);
-                return;
-              }
-
-              setNewPoint({
-                point: result.point,
-                command,
-              });
-
-              return;
-            }
-          }
-
-          setNewPoint(undefined);
+          highlightNewPoint([e.evt.clientX - box.x, e.evt.clientY - box.y]);
         }}
         width={bounds.width}
         height={bounds.height}
       >
-        <Layer className="asxx">
+        <Layer>
           <Metrics
             width={bounds.width}
             height={bounds.height}
@@ -766,21 +490,54 @@ export default function Editor({
           />
 
           <Group opacity={1}>
+            {!!drawingData && (
+              <Path
+                data={drawingData}
+                strokeWidth={settings.viewMode === "outline" ? 2 : 0}
+                stroke="#3b82f6"
+                fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
+              />
+            )}
             <Path
+              x={x}
+              y={baseline}
               data={data}
-              strokeWidth={settings.viewMode === "outline" ? 2 : 0}
+              scaleX={scale}
+              scaleY={-scale}
+              strokeWidth={
+                settings.viewMode === "outline" ? 2 / (scale || 0.1) : 0
+              }
               stroke="#3b82f6"
               fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
             />
             {!!newPoint && (
               <>
-                <Circle
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  fill="white"
-                  x={newPoint.point.x}
-                  y={newPoint.point.y}
-                  radius={5}
+                <Handle
+                  scale={scale}
+                  baseline={baseline}
+                  x={x}
+                  index={0}
+                  handles={commandsArray}
+                  onDrag={(e) => {
+                    console.log("drag", e);
+                  }}
+                  handle={{
+                    id: "new",
+                    command: "lineTo",
+                    args: [newPoint.point.x, newPoint.point.y],
+                  }}
+                  onDragEnd={onDragEnd}
+                  onActivate={() => {
+                    const newPoint = getNewPoint();
+                    if (!newPoint) {
+                      return;
+                    }
+                    const id = insertPoint(newPoint);
+                    console.log("id", id);
+
+                    resetNewPoint();
+                  }}
+                  isSelected={false}
                 />
                 {/* 
                 <Text
@@ -794,18 +551,18 @@ export default function Editor({
               </>
             )}
             <Handles
+              baseline={baseline}
+              x={x}
               onSelect={onHandleSelected}
-              onHover={(isHover) => {
-                setIsHoveringHandle(isHover);
-                setNewPoint(undefined);
-              }}
-              handles={commands}
+              onHover={onHandleHover}
+              handles={commandsArray}
               selectedHandles={selectedHandles}
-              onActivate={() => {
-                setIsDragging(true);
-              }}
+              scale={scale}
+              onActivate={onHandleActivate}
               onDrag={onDrag}
               onDragEnd={onDragEnd}
+              hovered={hoveredCommands}
+              active={activeCommands}
             />
           </Group>
 
@@ -855,9 +612,12 @@ export default function Editor({
             glyph={glyph}
             commands={commandsArray}
             font={font}
+            data={data}
           />
         </Layer>
       </Stage>
     </div>
   );
 }
+
+export default memo(Editor);

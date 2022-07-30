@@ -13,7 +13,7 @@ export interface Point {
   t?: number;
 }
 
-export type OnHandleActivate = (handle: Command) => void;
+export type OnHandleActivate = (id: string) => void;
 export type OnHandleDrag = (
   handle: Command,
   options?: {
@@ -22,6 +22,10 @@ export type OnHandleDrag = (
 ) => void;
 export type OnCommandUpdate = (command: Command) => void;
 export type onCommandsUpdate = (commands: Record<string, Command>) => void;
+
+export type OnCommandsAdd = (
+  table: Font["glyphs"]["items"]["0"]["path"]["commands"]
+) => void;
 
 export type PointTuple = [number, number];
 export interface Bounds {
@@ -55,13 +59,14 @@ interface Glyph {
   bbox: Box;
   advanceWidth: number;
   id: string;
-  character: number;
+  codePoint: number;
+  codePoints: number[];
   _metrics: {
     leftBearing: number;
   };
 }
 
-interface Table<T> {
+export interface Table<T> {
   ids: string[];
   items: Record<string, T>;
 }
@@ -110,4 +115,9 @@ export interface SnapResult {
 export interface Guideline {
   command: string;
   points: [number, number, number, number];
+}
+
+export interface NewPoint {
+  command: Command;
+  point: Point;
 }

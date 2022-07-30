@@ -1,4 +1,4 @@
-import { SetStateAction, useMemo, useRef, useState } from "react";
+import { SetStateAction, useCallback, useMemo, useRef, useState } from "react";
 import useFresh from "../../../hooks/useFresh";
 import {
   Settings,
@@ -49,7 +49,8 @@ export default function useHandleDrag({
   const cacheCommands =
     useRef<Font["glyphs"]["items"]["0"]["path"]["commands"]>();
 
-  const onDrag: OnHandleDrag = (handle, options = {}) => {
+  const getSnapPoints = useFresh(snapPoints);
+  const onDrag: OnHandleDrag = useCallback((handle, options = {}) => {
     options = {
       allowSnap: true,
       ...options,
@@ -63,7 +64,7 @@ export default function useHandleDrag({
     const scaleWithoutZoom = getScaleWithoutZoom();
     const settings = getSettings();
     const commands = cacheCommands.current;
-
+ 
     const selections = getSelectedHandleIds().reduce((acc, id) => {
       if (acc.includes(id)) {
         return acc;
@@ -86,7 +87,7 @@ export default function useHandleDrag({
     const command = commands.items[handle.id];
 
     const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
-
+ 
     let xy: PointTuple = [
       command.args[0] + amountToMove[0],
       command.args[1] + amountToMove[1],
@@ -104,7 +105,7 @@ export default function useHandleDrag({
           ...handle,
           args: xy,
         },
-        (snapPoints as any).filter((p: any) => !selections.includes(p.id)),
+        (getSnapPoints() as any).filter((p: any) => !selections.includes(p.id)),
         scale,
         scaleWithoutZoom,
         settings.snapToGrid ? settings.gridSize : 0,
@@ -244,9 +245,9 @@ export default function useHandleDrag({
         new: newHandles,
       },
     } as HistoryCommandsUpdate;
-  };
+  }, []);
 
-  const onDragEnd = () => {
+  const onDragEnd = useCallback(() => {
     cacheCommands.current = undefined;
     setIsDragging(false);
     setGuidelines([]);
@@ -254,7 +255,7 @@ export default function useHandleDrag({
       history.addToHistory(pendingDragHistory.current);
       pendingDragHistory.current = undefined;
     }
-  };
+  }, []);
 
   return {
     isDragging,

@@ -6,42 +6,27 @@ import computePathCommands from "../../utils/computePathCommands";
 interface Props {
   glyph: Font["glyphs"]["items"][0];
   fill?: boolean;
-
-  unitsPerEm: number;
   base: number;
 }
 
-function Svg({
-  glyph,
-  unitsPerEm,
-  fill = false, 
-  base,
-}: Props) {
-  const scale =
-    (1 / unitsPerEm) * Math.min(glyph.bbox.height, glyph.bbox.width);
-  const scaleX = scale;
-  const baseline = (base + 0) * scale;
-  const x = (0 - glyph.bbox.minX) * scaleX;
-
+function Svg({ glyph, fill = false, base }: Props) {
   const data = useMemo(() => {
     return commandsToPathData(
-      computePathCommands(
-        glyph.path.commands.ids.map((id) => glyph.path.commands.items[id]),
-        x,
-        baseline,
-        scale
-      )
+      glyph.path.commands.ids.map((id) => glyph.path.commands.items[id])
     );
-  }, []);
-
-  const zoom = 0.8;
-  const xx = Math.round((glyph.bbox.maxX - glyph.bbox.minX) * scaleX);
-  const yy = Math.round((base) * scale);
-  const viewBox = `0 0  ${xx + xx * (zoom - 1)} ${yy + yy * ( 1 - zoom)}`;
+  }, [glyph.path.commands.items]);
 
   return (
-    <svg width={"100%"} height={"100%"} viewBox={viewBox}>
+    <svg
+      width={"100%"}
+      height={"100%"}
+      viewBox={`0 0 ${glyph.advanceWidth || 0} ${base}`}
+      style={{
+        transform: "scaleY(-1)",
+      }}
+    >
       <path
+        transform={`translate(0, ${glyph.bbox.height / 2})`}
         fill={fill ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth={fill ? 0 : 2}

@@ -1,8 +1,6 @@
 import type { NextPage } from "next";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-import Svg from "../../components/Svg";
 import { Command, Font } from "../../types";
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
@@ -11,34 +9,27 @@ import Button from "../../components/Button";
 import { Settings } from "../../types";
 import useHistory from "../../hooks/useHistory";
 import parseRawSvg from "../../utils/parseRawSvg";
-import makeCubicPayload from "../../utils/makeCubicPayload";
-import quadraticToQubic from "../../utils/quadraticToCubic";
 import KeyboardEventsProvider from "../../context/KeyboardEventsProvider";
 import useFresh from "../../hooks/useFresh";
-import { findFont, saveFont } from "../../db/database";
 import { useRouter } from "next/router";
 import normalize from "../../utils/normalize";
 import ToOpenType from "../../components/ToOpentype";
 import GlyphInfo from "../../components/GlyphInfo";
 import FontInfo from "../../components/FontInfo";
+import computCommandsBounds from "../../utils/computCommandsBounds";
+import GlyphList from "../../components/GlyphList";
+import loadFont from "../../api/loadFont";
+import { saveFont } from "../../db/database";
+import useFontSelector from "../../utils/useFontSelector";
 
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
-
-const getFont = async ({ queryKey }: any) => {
-  const font = await findFont(queryKey[1]);
-
-  if (!font) {
-    throw new Error("font not found");
-  }
-  return font;
-};
 
 const App: NextPage = () => {
   const router = useRouter();
 
-  const fontId = router.query.id;
+  const fontId = `${router.query.id}`;
 
-  const query = useQuery<Font>(["font", fontId], getFont, {
+  const query = useQuery<Font>(["font", fontId], loadFont, {
     staleTime: Infinity,
     networkMode: "always",
     retry: 0,
@@ -56,7 +47,7 @@ const App: NextPage = () => {
 
   const updateFont = (font: Font) => {
     queryClient.setQueryData(["font", font.id], font);
-    saveFont(font);
+    // saveFont(font);
   };
 
   const [selected, setSelected] = useState<string>(String(router.query.glyph));
@@ -76,7 +67,9 @@ const App: NextPage = () => {
     }
   });
 
-  const getFreshFont = useFresh(query.data);
+  const getFont = useFontSelector(fontId);
+
+  const getSelected = useFresh(selected);
 
   const { glyphs, font } = useMemo(() => {
     if (!query.data) {
@@ -96,7 +89,7 @@ const App: NextPage = () => {
     if (query.isLoading || !query.isSuccess) {
       return;
     }
-    const font = getFreshFont();
+    const font = getFont();
 
     if (!font) {
       return;
@@ -116,12 +109,14 @@ const App: NextPage = () => {
 
   const updateCommands = useCallback(
     (commands: Record<string, Command>) => {
-      const font = getFreshFont();
+      const font = getFont();
+      const selected = getSelected();
 
       if (!font) {
         return;
       }
 
+      console.log(selected);
       updateFont({
         ...font,
         glyphs: {
@@ -205,6 +200,49 @@ const App: NextPage = () => {
     [query.data, selected, fontId]
   );
 
+  const onCommandsAdd = useCallback(() => {
+    (table: Font["glyphs"]["items"]["0"]["path"]["commands"]) => {
+      const font = getFont();
+      const selected = getSelected();
+      if (!font) {
+        return;
+      }
+
+      updateFont({
+        ...font,
+        glyphs: {
+          ...font.glyphs,
+          items: {
+            ...font.glyphs.items,
+            [selected]: {
+              ...font.glyphs.items[selected],
+              path: {
+                ...font.glyphs.items[selected].path,
+
+                commands: {
+                  ...font.glyphs.items[selected].path.commands,
+                  ids: table.ids,
+                  items: {
+                    ...font.glyphs.items[selected].path.commands.items,
+                    ...table.items,
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    };
+  }, []);
+
+  const onSelectHandles = useCallback((ids: string[]) => {
+    setSelectedHandles((selected) => {
+      if (ids.length === 0 && selected.length === 0) {
+        return selected;
+      }
+      return ids;
+    });
+  }, []);
   if (query.isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center text-xl font-light flex-col space-y-4">
@@ -270,90 +308,16 @@ const App: NextPage = () => {
         </div>
       </div>
 
-      <div className="w-[240px] overflow-hidden border-r  border-gray-300 shadow-xl">
-        <div
-          className={`grid grid-cols-4 w-full flex-wrap pr-4 h-screen  overflow-y-auto`}
-        >
-          {glyphs.ids.map((id) => {
-            const glyph = glyphs.items[id];
-            return (
-              <div
-                key={id}
-                onClick={() => {
-                  router.replace({
-                    query: {
-                      ...router.query,
-                      glyph: glyph.id,
-                    },
-                  });
-                }}
-                className={` p-0.5 h-14 flex items-center justify-center relative hover:z-50 ring-inset ${
-                  selected === glyph.id
-                    ? "ring  bg-blue-500 text-white ring-blue-500 z-20"
-                    : "bg-slate-50 hover:ring hover:ring-blue-500"
-                } relative cursor-pointer border-[0.5px] border-gray-200`}
-              >
-                <Svg
-                  unitsPerEm={font.unitsPerEm}
-                  glyph={glyph}
-                  fill
-                  base={font.ascent - font.descent}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <GlyphList font={font} glyphs={glyphs} selected={selected} />
 
       {!!glyph && (
         <KeyboardEventsProvider className="flex-1  w-full  overflow-hidden">
           <Editor
             history={history}
             settings={settings}
-            onCommandsAdd={(
-              table: Font["glyphs"]["items"]["0"]["path"]["commands"]
-            ) => {
-              if (!query.data) {
-                return;
-              }
-
-              updateFont({
-                ...query.data,
-                glyphs: {
-                  ...query.data.glyphs,
-                  items: {
-                    ...query.data.glyphs.items,
-                    [selected]: {
-                      ...query.data.glyphs.items[selected],
-                      path: {
-                        ...query.data.glyphs.items[selected].path,
-
-                        commands: {
-                          ...query.data.glyphs.items[selected].path.commands,
-                          ids: table.ids,
-                          items: {
-                            ...query.data.glyphs.items[selected].path.commands
-                              .items,
-                            ...table.items,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              });
-            }}
-            onCommandsUpdate={(commands) => {
-              updateCommands(commands);
-            }}
-            onCommandUpdate={(command) => {
-              updateCommands({
-                [command.id]: command,
-              });
-            }}
-            onSelectHandles={(ids: string[]) => {
-              setSelectedHandles(ids);
-            }}
+            onCommandsAdd={onCommandsAdd}
+            onCommandsUpdate={updateCommands}
+            onSelectHandles={onSelectHandles}
             font={font}
             glyph={glyph}
             selectedHandles={selectedHandles}
@@ -430,7 +394,34 @@ const App: NextPage = () => {
           </select>
         </div>
 
-        {!!glyph && <GlyphInfo glyph={glyph} />}
+        {!!glyph && (
+          <GlyphInfo
+            onFitWidth={() => {
+              const bbox = computCommandsBounds(glyph.path.commands);
+              const font = getFont();
+
+              if (!font) {
+                return;
+              }
+
+              updateFont({
+                ...font,
+                glyphs: {
+                  ...font.glyphs,
+                  items: {
+                    ...font.glyphs.items,
+                    [selected]: {
+                      ...font.glyphs.items[selected],
+                      bbox,
+                      advanceWidth: bbox.width,
+                    },
+                  },
+                },
+              });
+            }}
+            glyph={glyph}
+          />
+        )}
         <FontInfo font={font} />
       </div>
 

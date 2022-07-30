@@ -9,8 +9,6 @@ import { Popover, Transition } from "@headlessui/react";
 import validator from "validator";
 
 export default function Home() {
-  
-
   const fontLoader = useMutation(
     async ({
       file,
@@ -37,6 +35,9 @@ export default function Home() {
       });
       saveFont(normalizeFont(response.data));
       return response.data;
+    },
+    {
+      networkMode: "always",
     }
   );
 
