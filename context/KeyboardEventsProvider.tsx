@@ -1,49 +1,10 @@
+import { PropsWithChildren, useEffect, useRef, useState } from "react";
+import { useAppDispatch, useAppSelector } from "../hooks/store";
 import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import vector from "../utils/vector";
-
-type KeysTable = Record<string, boolean>;
-type MouseState = {
-  active: boolean;
-  x: number;
-  y: number;
-};
-type MouseStates = {
-  down: MouseState;
-  up: MouseState;
-  move: MouseState;
-};
-
-const defaultMouseState = {
-  down: {
-    active: false,
-    x: 0,
-    y: 0,
-  },
-  move: {
-    active: false,
-    x: 0,
-    y: 0,
-  },
-  up: {
-    active: false,
-    x: 0,
-    y: 0,
-  },
-};
-const KeyboardContext = createContext<{
-  keys: KeysTable;
-  mouse: MouseStates;
-}>({
-  keys: {},
-  mouse: defaultMouseState,
-});
+  resetKeyboardKeys,
+  selectKeyboard,
+  setKeyboardKeys,
+} from "../store/workspace/reducer";
 
 export default function KeyboardEventsProvider({
   children,
@@ -51,84 +12,8 @@ export default function KeyboardEventsProvider({
 }: PropsWithChildren<JSX.IntrinsicElements["div"]>) {
   const ref = useRef<HTMLDivElement>(null);
 
-  const [keys, setKeys] = useState<KeysTable>({});
   const [needFocusOnMouseEnter, setNeedFocusOnMouseEnter] = useState(true);
-
-  const [mouse, setMouse] = useState<MouseStates>(defaultMouseState);
-
-  useEffect(() => {
-    if (!ref.current || !needFocusOnMouseEnter) {
-      return;
-    }
-    const element = ref.current;
-
-    const getMousePosition = (
-      x: number,
-      y: number,
-      element: HTMLDivElement
-    ) => {
-      const box = element.getBoundingClientRect();
-      return vector(x - box.x, y - box.y);
-    };
-    const onDown = (e: MouseEvent) => {
-      setMouse((mouse) => ({
-        ...mouse,
-        down: {
-          active: true,
-          ...getMousePosition(e.clientX, e.clientY, element),
-        },
-      }));
-    };
-    const onMove = (e: MouseEvent) => {
-      setMouse((mouse) => ({
-        ...mouse,
-        move: {
-          active: true,
-          ...getMousePosition(e.clientX, e.clientY, element),
-        },
-      }));
-    };
-    const onLeave = (e: MouseEvent) => {
-      setMouse((mouse) => ({
-        ...mouse,
-        down: {
-          ...mouse.down,
-          active: false,
-        },
-        up: {
-          ...mouse.up,
-          active: false,
-        },
-        move: {
-          ...mouse.up,
-          active: false,
-        },
-      }));
-    };
-
-    const onUp = (e: MouseEvent) => {
-      setMouse((mouse) => ({
-        ...mouse,
-        up: {
-          ...mouse.up,
-          ...getMousePosition(e.clientX, e.clientY, element),
-          active: true,
-        },
-      }));
-    };
-
-    element.addEventListener("mousedown", onDown);
-    element.addEventListener("mousemove", onMove);
-    element.addEventListener("mouseleave", onLeave);
-    element.addEventListener("mouseup", onUp);
-
-    return () => {
-      element.removeEventListener("mousedown", onDown);
-      element.removeEventListener("mousemove", onMove);
-      element.removeEventListener("mouseup", onUp);
-      element.addEventListener("mouseleave", onLeave);
-    };
-  }, []);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (!ref.current) {
@@ -136,21 +21,23 @@ export default function KeyboardEventsProvider({
     }
     const element = ref.current;
     const onKeyDown = (e: KeyboardEvent) => {
-      setKeys((keys) => ({
-        ...keys,
-        [e.code]: true,
-      }));
+      dispatch(
+        setKeyboardKeys({
+          [e.code]: true,
+        })
+      );
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      setKeys((keys) => ({
-        ...keys,
-        [e.code]: false,
-      }));
+      dispatch(
+        setKeyboardKeys({
+          [e.code]: false,
+        })
+      );
     };
 
     const onBlur = () => {
-      setKeys({});
+      dispatch(resetKeyboardKeys());
       setNeedFocusOnMouseEnter(true);
     };
 
@@ -185,17 +72,14 @@ export default function KeyboardEventsProvider({
   }, [needFocusOnMouseEnter]);
 
   return (
-    <KeyboardContext.Provider
-      value={{
-        keys: keys,
-        mouse,
-      }}
-    >
-      <div {...props} tabIndex={4} ref={ref}>
-        {children}
-      </div>
-    </KeyboardContext.Provider>
+    <div {...props} tabIndex={4} ref={ref}>
+      {children}
+    </div>
   );
 }
 
-export const useKeyboard = () => useContext(KeyboardContext);
+export const useKeyboard = () => {
+  return {
+    keys: useAppSelector(selectKeyboard),
+  };
+};

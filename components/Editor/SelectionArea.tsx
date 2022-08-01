@@ -1,6 +1,10 @@
 import { RefObject, useEffect, useRef, useState } from "react";
+import { useAppDispatch, useAppSelector } from "../../hooks/store";
 import useFresh from "../../hooks/useFresh";
-import { Bounds, Command } from "../../types";
+import useFreshSelector from "../../hooks/useFreshSelector";
+import useCommandStore from "../../store/commands/reducer";
+import { selectCommandsTable } from "../../store/font/reducer";
+import { Bounds, Command, Table } from "../../types";
 import onLeftButton from "../../utils/onLeftButton";
 import scaleX from "../../utils/scaleX";
 import scaleY from "../../utils/scaleY";
@@ -8,16 +12,12 @@ import vector from "../../utils/vector";
 
 interface Props {
   workspaceRef: RefObject<HTMLDivElement>;
-  handles: Command[];
-  onSelectHandles: (ids: string[]) => void;
   scale: number;
   baseline: number;
   x: number;
 }
 export default function SelectionArea({
   workspaceRef,
-  handles,
-  onSelectHandles,
   scale,
   baseline,
   x,
@@ -29,7 +29,11 @@ export default function SelectionArea({
     height: 0,
   });
 
-  const getHandles = useFresh(handles);
+  const getCommands = useFreshSelector(selectCommandsTable);
+
+  const dispatch = useAppDispatch();
+
+  const select = useCommandStore((state) => state.select);
 
   useEffect(() => {
     if (!workspaceRef.current) {
@@ -38,20 +42,21 @@ export default function SelectionArea({
     let startX = 0;
     let startY = 0;
     let box: DOMRect;
-    let handles = getHandles();
+    let handles = getCommands();
 
     const onMousedown = onLeftButton((e: MouseEvent) => {
-      handles = getHandles();
+      handles = getCommands();
       if (!workspaceRef.current) {
         return;
       }
-      onSelectHandles([]);
+      select([]);
       box = workspaceRef.current.getBoundingClientRect();
       startX = e.clientX;
       startY = e.clientY;
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
     });
+
     const onMouseMove = (e: MouseEvent) => {
       let width = e.clientX - startX;
       let height = e.clientY - startY;
@@ -73,7 +78,8 @@ export default function SelectionArea({
       width = Math.max(Math.abs(width), 0);
       height = Math.max(Math.abs(height), 0);
 
-      const found = handles.filter((handle) => {
+      const found = handles.ids.filter((id) => {
+        const handle = handles.items[id];
         const scaledX = scaleX(handle.args[0], x, scale);
         const scaledY = scaleY(handle.args[1], baseline, scale);
 
@@ -94,7 +100,7 @@ export default function SelectionArea({
         x: position.x,
         y: position.y,
       });
-      onSelectHandles(found.map((h) => h.id));
+      select(found);
     };
     const onMouseUp = () => {
       setBounds({
@@ -108,6 +114,10 @@ export default function SelectionArea({
     };
 
     workspaceRef.current?.addEventListener("mousedown", onMousedown);
+
+    return () => {
+      workspaceRef.current?.removeEventListener("mousedown", onMousedown);
+    };
   }, [scale, x, baseline]);
 
   if (!bounds.width || !bounds.height) {

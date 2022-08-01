@@ -12,7 +12,7 @@ interface Props {
 export default function GlyphList({ font, glyphs, selected }: Props) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const router = useRouter();
-  const getGlyphs = useFresh(glyphs);
+  const [getGlyphs] = useFresh(glyphs);
   const ids = useMemo<string[]>(() => {
     const glyphs = getGlyphs();
     const keyword = searchKeyword.toLowerCase();

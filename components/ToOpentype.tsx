@@ -44,7 +44,7 @@ export default function ToOpenType({
     };
   }, [font]);
 
-  const getIsChanged = useFresh(isChanged);
+  const [getIsChanged] = useFresh(isChanged);
 
   useEffect(() => {
     if (font.glyphs.items[selected] && (!getIsChanged() || !testData)) {

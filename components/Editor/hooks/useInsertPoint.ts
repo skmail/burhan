@@ -41,7 +41,7 @@ interface Props {
   onCommandsAdd: OnCommandsAdd;
 }
 export default function useInsertPoint({ commands, onCommandsAdd }: Props) {
-  const getProps = useFresh({
+  const [getProps] = useFresh({
     commands,
   });
   const onInsert = useCallback((newPoint: NewPoint) => {

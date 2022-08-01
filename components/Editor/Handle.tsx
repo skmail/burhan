@@ -1,78 +1,90 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Circle, Line, KonvaNodeEvents, Text, Group, Rect } from "react-konva";
-
+import { useAppDispatch, useAppSelector } from "../../hooks/store";
+import { shallowEqual } from "react-redux";
 import useFresh from "../../hooks/useFresh";
-
-import {
-  Command,
-  OnHandleActivate,
-  OnHandleDrag,
-  PointTuple,
-  Vector,
-} from "../../types";
+import { selectCommand, selectCommandsTable } from "../../store/font/reducer";
+import { OnHandleDrag, PointTuple, Vector } from "../../types";
 import vector2 from "../../utils/vector";
+import toScreenPoint from "../../utils/toScreenPoint";
+import { useKeyboard } from "../../context/KeyboardEventsProvider";
+import useFreshSelector from "../../hooks/useFreshSelector";
+import { selectKeyboard } from "../../store/workspace/reducer";
+import useCommandStore from "../../store/commands/reducer";
+import shallow from "zustand/shallow";
 
 interface Props {
-  handle: Command;
+  id: string;
   onDrag: OnHandleDrag;
   onDragEnd: () => void;
-  index: number;
-  handles: Command[];
-  isSelected?: boolean;
-  onSelect?: (id: string) => void;
-  onActivate?: OnHandleActivate;
-  isHovered?: boolean;
-  onHover?: (isHover: boolean) => void;
-  isActive?: boolean;
   baseline: number;
   x: number;
   scale: number;
 }
-const noob = () => {};
 
-export default memo(function Handle({
-  handle,
+export default function Handle({
+  id,
   onDrag,
   onDragEnd,
-  index,
-  handles,
-  isSelected = false,
-  isHovered = false,
-  isActive = false,
-  onSelect = noob,
-  onActivate = noob,
-  onHover = noob,
   baseline,
   scale,
   x,
 }: Props) {
+  const states = useCommandStore(
+    (state) => ({
+      isActive: state.active.includes(id),
+      isHovered: state.hovered.includes(id),
+      isSelected: state.selected.includes(id),
+      select: state.select,
+      activate: state.activate,
+      hover: state.hover,
+      toggleSelected: state.toggleSelected,
+      deactivate: state.deactivate,
+    }),
+    shallow
+  );
+
+  const [getStates] = useFresh(states);
+
+  const dispatch = useAppDispatch();
+
+  const handle = useAppSelector((state) => selectCommand(state, id));
+
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingStarted, setIsDraggingStarted] = useState(false);
 
-  const getIsSelected = useFresh(isSelected);
-  const getIsDraggingStarted = useFresh(isDraggingStarted);
-  const getIsDragging = useFresh(isDragging);
-
+  const [getIsDraggingStarted] = useFresh(isDraggingStarted);
+  const [getIsDragging] = useFresh(isDragging);
   const startPosition = useRef<Vector>(vector2());
+
+  const getKeys = useFreshSelector(selectKeyboard);
+
   const onMouseDown = useCallback(
     (e: any) => {
-      startPosition.current.x = e.evt.clientX;
-      startPosition.current.y = e.evt.clientY;
-
       if (e.evt.button !== 0) {
         return;
       }
       e.evt.preventDefault();
       e.evt.stopPropagation();
+      // getKeys
+      startPosition.current.x = e.evt.clientX;
+      startPosition.current.y = e.evt.clientY;
+      const states = getStates();
 
-      onActivate(handle.id);
-
-      onSelect(handle.id);
+      states.activate(handle.id);
+      if (getKeys().ShiftLeft) {
+        states.toggleSelected(handle.id);
+      } else if (!states.isSelected) {
+        states.select(handle.id);
+      }
     },
     [handle.id]
   );
 
   useEffect(() => {
+    if (!states.isActive) {
+      return;
+    }
     const onMouseMove = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -90,32 +102,35 @@ export default memo(function Handle({
         args: [movedX, movedY],
       });
     };
+    const onUp = () => {
+      if (!getKeys().ShiftLeft && !getIsDraggingStarted()) {
+        states.select(handle.id);
+      }
 
+      states.deactivate(handle.id);
+      onDragEnd();
+
+      setIsDragging(false);
+      setTimeout(() => setIsDraggingStarted(false), 500);
+    };
     document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onUp);
 
     return () => {
+      document.removeEventListener("mouseup", onUp);
       document.removeEventListener("mousemove", onMouseMove);
     };
-  }, [isActive]);
-  const onMouseUp = useCallback(() => {
-    if (!getIsDraggingStarted()) {
-      onSelect(handle.id);
-    }
-    setIsDragging(false);
-    onDragEnd();
-    setTimeout(() => setIsDraggingStarted(false), 500);
-  }, [handle.id]);
+  }, [states.isActive]);
 
   const onMouseEnter: KonvaNodeEvents["onMouseEnter"] = useCallback(
     (e: any) => {
-      // setIsHover(true);
       const stage = e.target.getStage();
 
       if (!stage) {
         return;
       }
       document.body.style.cursor = "pointer";
-      onHover(true);
+      states.hover(handle.id);
     },
     [handle.id]
   );
@@ -125,7 +140,6 @@ export default memo(function Handle({
       if (getIsDragging()) {
         return;
       }
-      // setIsHover(false);
 
       const stage = e.target.getStage();
 
@@ -134,66 +148,80 @@ export default memo(function Handle({
       }
 
       document.body.style.cursor = "default";
-      onHover(false);
+
+      states.hover();
     },
     [handle.id]
   );
 
   const props = {
     // @ts-ignore
-    stroke: isSelected
+    stroke: states.isSelected
       ? "white"
-      : isHovered
+      : states.isHovered
       ? "#3b82f6"
       : handle.command === "moveTo"
       ? "red"
       : "#9ca3af",
-    strokeWidth: isHovered ? 2 : 1,
+    strokeWidth: states.isHovered ? 2 : 1,
     x: x + handle.args[0] * scale,
     y: baseline - handle.args[1] * scale,
-    fill: isSelected ? "#3b82f6" : "white",
+    fill: states.isSelected ? "#3b82f6" : "white",
 
     onMouseDown,
     onMouseEnter,
     onMouseLeave,
-    onMouseUp,
   };
 
   const isControlPoint = ["bezierCurveToCP1", "bezierCurveToCP2"].includes(
     handle.command
   );
 
-  const toPoint = (
-    point: PointTuple,
-    x: number,
-    baseline: number,
-    scale: number
-  ) => [x + point[0] * scale, baseline - point[1] * scale];
+  const lines = useAppSelector((state) => {
+    const commands = selectCommandsTable(state);
+    if (!handle.args.length) {
+      return [];
+    }
+    const index = commands.ids.indexOf(handle.id);
 
+    const lines = [];
+    if (handle.command === "bezierCurveToCP1") {
+      const p1 = commands.items[commands.ids[index - 1]];
+      if (!p1) {
+        return [];
+      }
+      lines.push([
+        ...toScreenPoint(p1.args, [x, baseline], scale),
+        ...toScreenPoint(handle.args, [x, baseline], scale),
+      ]);
+    } else if (handle.command == "bezierCurveToCP2") {
+      const p1 = commands.items[commands.ids[index + 1]];
+      if (!p1) {
+        return [];
+      }
+      lines.push([
+        ...toScreenPoint(handle.args, [x, baseline], scale),
+        ...toScreenPoint(p1.args, [x, baseline], scale),
+      ]);
+    }
+
+    return lines;
+  });
+
+  if (!handle.args.length) {
+    return null;
+  }
   return (
     <>
-      {handle.command === "bezierCurveToCP1" && (
+      {lines.map((line, index) => (
         <Line
-          points={[
-            ...toPoint(handles[index - 1].args, x, baseline, scale),
-            ...toPoint(handles[index].args, x, baseline, scale),
-          ]}
+          key={index}
+          points={line}
           strokeWidth={1}
           stroke={"#3b82f6"}
-          dash={isHovered || isDragging ? undefined : [4, 4]}
+          dash={states.isHovered || isDragging ? undefined : [4, 4]}
         />
-      )}
-      {handle.command === "bezierCurveToCP2" && (
-        <Line
-          points={[
-            ...toPoint(handles[index].args, x, baseline, scale),
-            ...toPoint(handles[index + 1].args, x, baseline, scale),
-          ]}
-          strokeWidth={1}
-          stroke={"#3b82f6"}
-          dash={isHovered || isDragging ? undefined : [4, 4]}
-        />
-      )}
+      ))}
       {!isControlPoint && <Circle {...props} radius={4} />}
       {isControlPoint && (
         <Rect
@@ -215,4 +243,4 @@ export default memo(function Handle({
         ></Text> */}
     </>
   );
-});
+}

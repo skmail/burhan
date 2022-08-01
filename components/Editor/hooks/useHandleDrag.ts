@@ -1,5 +1,14 @@
 import { SetStateAction, useCallback, useMemo, useRef, useState } from "react";
+import shallow from "zustand/shallow";
+import { useAppDispatch } from "../../../hooks/store";
 import useFresh from "../../../hooks/useFresh";
+import useFreshSelector from "../../../hooks/useFreshSelector";
+import useCommandStore from "../../../store/commands/reducer";
+
+import {
+  selectCommandsTable,
+  updateCommands,
+} from "../../../store/font/reducer";
 import {
   Settings,
   OnHandleDrag,
@@ -8,7 +17,7 @@ import {
   SnapResult,
   Command,
   Guideline,
-  onCommandsUpdate,
+  Table,
 } from "../../../types";
 import { HistoryCommandsUpdate, HistoryManager } from "../../../types/History";
 import computeAngle from "../../../utils/computeAngle";
@@ -20,36 +29,37 @@ interface Props {
   scale: number;
   scaleWithoutZoom: number;
   settings: Settings;
-  commands: Font["glyphs"]["items"]["0"]["path"]["commands"];
-  selectedHandles: string[];
+
   snapPoints: Command[];
   setGuidelines: (guidelines: SetStateAction<Guideline[]>) => void;
-  onCommandsUpdate: onCommandsUpdate;
   history: HistoryManager;
 }
 export default function useHandleDrag({
   scaleWithoutZoom,
   scale,
   settings,
-  commands,
-  selectedHandles,
+
   snapPoints,
   setGuidelines,
-  onCommandsUpdate,
+
   history,
 }: Props) {
-  const getScaleWithoutZoom = useFresh(scaleWithoutZoom);
-  const getScale = useFresh(scale);
-  const getSettings = useFresh(settings);
-  const getSelectedHandleIds = useFresh(selectedHandles);
-  const getFreshCommands = useFresh(commands);
+  const dispatch = useAppDispatch();
+  const [getScaleWithoutZoom] = useFresh(scaleWithoutZoom);
+  const [getScale] = useFresh(scale);
+  const [getSettings] = useFresh(settings);
+
+  const getFreshCommands = useFreshSelector(selectCommandsTable);
+  const selections = useCommandStore((state) => state.selected, shallow);
+  const [getSelectedHandleIds] = useFresh(selections);
+
   const [isDragging, setIsDragging] = useState(false);
+  const [getSnapPoints] = useFresh(snapPoints);
+
   const pendingDragHistory = useRef<HistoryCommandsUpdate>();
 
-  const cacheCommands =
-    useRef<Font["glyphs"]["items"]["0"]["path"]["commands"]>();
+  const cacheCommands = useRef<Table<Command> | undefined>(undefined);
 
-  const getSnapPoints = useFresh(snapPoints);
   const onDrag: OnHandleDrag = useCallback((handle, options = {}) => {
     options = {
       allowSnap: true,
@@ -64,7 +74,6 @@ export default function useHandleDrag({
     const scaleWithoutZoom = getScaleWithoutZoom();
     const settings = getSettings();
     const commands = cacheCommands.current;
- 
     const selections = getSelectedHandleIds().reduce((acc, id) => {
       if (acc.includes(id)) {
         return acc;
@@ -80,14 +89,13 @@ export default function useHandleDrag({
           acc.push(nextPoint.id);
         }
       }
-
       return acc;
     }, [] as string[]);
 
     const command = commands.items[handle.id];
 
     const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
- 
+
     let xy: PointTuple = [
       command.args[0] + amountToMove[0],
       command.args[1] + amountToMove[1],
@@ -100,12 +108,20 @@ export default function useHandleDrag({
     };
 
     if (options.allowSnap) {
+      const snapPoints = [...(getSnapPoints() as any)];
+      for (let id of cacheCommands.current.ids) {
+        if (selections.includes(id)) {
+          continue;
+        }
+        snapPoints.push(commands.items[id]);
+      }
+
       snapped = snap(
         {
           ...handle,
           args: xy,
         },
-        (getSnapPoints() as any).filter((p: any) => !selections.includes(p.id)),
+        snapPoints,
         scale,
         scaleWithoutZoom,
         settings.snapToGrid ? settings.gridSize : 0,
@@ -228,7 +244,7 @@ export default function useHandleDrag({
       return acc;
     }, {} as Record<string, Command>);
 
-    onCommandsUpdate(newHandles);
+    dispatch(updateCommands(newHandles));
 
     pendingDragHistory.current = {
       type: "commands.update",

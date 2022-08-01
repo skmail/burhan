@@ -30,6 +30,12 @@ import useZoom from "./hooks/useZoom";
 import useHighlightNewPoint from "./hooks/useHighlightNewPoint";
 import Handle from "./Handle";
 import useInsertPoint from "./hooks/useInsertPoint";
+import { Provider, shallowEqual, useStore } from "react-redux";
+import { useAppSelector } from "../../hooks/store";
+import { selectCommandsTable } from "../../store/font/reducer";
+import useKeyboardMove from "./hooks/useKeyboardMove";
+import useDeletePoints from "./hooks/useDeletePoints";
+import { ReactReduxContext } from "react-redux";
 
 interface Props {
   font: Omit<Font, "glyphs">;
@@ -94,7 +100,10 @@ function Editor({
     [glyph.path.commands]
   );
 
-  const data = useMemo(() => commandsToPath(commandsArray), [commandsArray]);
+  const data = useAppSelector((state) => {
+    const commands = selectCommandsTable(state);
+    return commandsToPath(commands.ids.map((id) => commands.items[id]));
+  });
 
   const points: any[] = [
     {
@@ -132,95 +141,16 @@ function Editor({
       command: "capHeight",
       args: [0, font.capHeight],
     },
-    ...commandsArray,
   ];
 
   const toCanvasPoint = (_x: number, _y: number) => {
     return [x + _x * scale, baseline - _y * scale];
   };
 
-  const getSelectedHandlesId = useFresh(selectedHandles);
-
-  const getFreshCommands = useFresh(glyph.path.commands);
+  const [getSelectedHandlesId] = useFresh(selectedHandles);
+  const [getFreshCommands] = useFresh(glyph.path.commands);
 
   const { keys } = useKeyboard();
-
-  useEffect(() => {
-    if (
-      !keys.ArrowUp &&
-      !keys.ArrowLeft &&
-      !keys.ArrowRight &&
-      !keys.ArrowDown
-    ) {
-      return;
-    }
-    const selections = getSelectedHandlesId();
-
-    if (!selections.length) {
-      return;
-    }
-
-    const moveUp = () => {
-      const firstHandle = getFreshCommands().items[selections[0]];
-      const args: PointTuple = [0, 0];
-      let a = 1;
-      let snap = true;
-      if (keys.ShiftLeft) {
-        a = settings.gridSize;
-      } else if (keys.AltLeft) {
-        a = settings.gridSize / 4;
-      } else {
-        snap = false;
-      }
-
-      const amount = a * zoom;
-
-      if (keys.ArrowUp) {
-        args[1] += amount;
-      }
-
-      if (keys.ArrowLeft) {
-        args[0] -= amount;
-      }
-
-      if (keys.ArrowRight) {
-        args[0] += amount;
-      }
-
-      if (keys.ArrowDown) {
-        args[1] -= amount;
-      }
-
-      onDrag(
-        {
-          ...firstHandle,
-          args,
-        },
-        {
-          allowSnap: snap,
-        }
-      );
-
-      onDragEnd();
-    };
-
-    moveUp();
-    const interval = setInterval(() => moveUp(), 200);
-
-    return () => {
-      setGuidelines([]);
-      clearInterval(interval);
-    };
-  }, [
-    keys.ArrowUp,
-    keys.ArrowLeft,
-    keys.ArrowRight,
-    keys.ArrowDown,
-    zoom,
-    keys.ShiftLeft,
-    keys.AltLeft,
-    settings.gridSize,
-  ]);
 
   const onHandleSelected = useCallback(
     (id: string) => {
@@ -235,108 +165,22 @@ function Editor({
     [selectedHandles, keys.ShiftLeft]
   );
 
-  useEffect(() => {
-    if (!keys.Backspace && !keys.Delete) {
-      return;
-    }
-    const selections = getSelectedHandlesId();
-
-    if (!selections.length) {
-      return;
-    }
-    const commands = getFreshCommands();
-
-    const queue = [...selections];
-
-    const result: string[] = [];
-
-    const items: Record<string, Command> = {};
-
-    let ids = [...commands.ids];
-    let _items: Record<string, Command> = { ...commands.items };
-
-    while (queue.length > 0) {
-      const id = queue.shift() as string;
-
-      if (result.includes(id)) {
-        continue;
-      }
-
-      const command = _items[id];
-      const index = ids.indexOf(id);
-
-      switch (command.command) {
-        case "lineTo":
-          result.push(id);
-          break;
-        case "bezierCurveTo":
-          result.push(id, ids[index - 1], ids[index - 2]);
-          break;
-        case "bezierCurveToCP1":
-          result.push(id, ids[index + 1], ids[index + 2]);
-          break;
-        case "bezierCurveToCP2":
-          result.push(id, ids[index - 1], ids[index + 1]);
-          break;
-        case "moveTo":
-          result.push(id);
-          const nextIndex = index + 1;
-          const next = _items[ids[nextIndex]];
-          if (next) {
-            if ("bezierCurveToCP1" === next.command) {
-              result.push(ids[nextIndex + 1], ids[nextIndex + 2]);
-            }
-
-            if (next.command !== "closePath") {
-              items[next.id] = {
-                ...next,
-                command: "moveTo",
-              };
-            }
-          }
-      }
-
-      _items = {
-        ...commands.items,
-        ...items,
-      };
-
-      ids = ids.filter((id) => !result.includes(id));
-
-      // heal the path
-
-      for (let index = 0; index < ids.length; index++) {
-        const prev = _items[ids[index - 1]];
-
-        if (
-          _items[ids[index]].command === "closePath" &&
-          (!prev || prev.command === "closePath")
-        ) {
-          result.push(ids[index]);
-        }
-      }
-
-      ids = ids.filter((id) => !result.includes(id));
-    }
-
-    onSelectHandles([]);
-
-    onCommandsAdd({
-      ids,
-      items,
-    });
-  }, [keys.Backspace, keys.Delete]);
+  useDeletePoints();
 
   const { onDrag, onDragEnd, isDragging, setIsDragging } = useHandleDrag({
     scaleWithoutZoom,
     scale,
     settings,
-    commands: glyph.path.commands,
-    selectedHandles,
     snapPoints: points,
     setGuidelines,
-    onCommandsUpdate,
     history,
+  });
+
+  useKeyboardMove({
+    settings,
+    zoom,
+    onDrag,
+    onDragEnd,
   });
 
   const { isDrawing, data: drawingData } = useDrawingPen({
@@ -397,6 +241,13 @@ function Editor({
     setHoveredCommands(ids);
   }, []);
 
+  const store = useStore();
+
+  const ids = useAppSelector(
+    (state) => selectCommandsTable(state).ids,
+    shallowEqual
+  );
+  
   return (
     <div
       className="bg-gray-100 relative"
@@ -437,23 +288,17 @@ function Editor({
           <MinusIcon className="w-5 h-5" />
         </Button>
       </div>
-
       <PanningArea
         onPan={(x, y) => {
           setPan((pan) => [pan[0] + x, pan[1] + y]);
         }}
       />
       <SelectionArea
-        onSelectHandles={(ids) => {
-          onSelectHandles(ids);
-        }}
-        handles={commandsArray}
         workspaceRef={ref}
         x={x}
         baseline={baseline}
         scale={scale}
       />
-
       <Grid
         size={settings.gridSize}
         zoom={zoom}
@@ -464,6 +309,7 @@ function Editor({
           height / 2 + pan[1] + ((font.ascent + font.descent) / 2) * scale,
         ]}
       />
+
       <Stage
         onMouseMove={(e) => {
           if (!ref.current || isDragging || isHoveringHandle) {
@@ -476,144 +322,140 @@ function Editor({
         height={bounds.height}
       >
         <Layer>
-          <Metrics
-            width={bounds.width}
-            height={bounds.height}
-            ascent={font.ascent}
-            descent={font.descent}
-            xHeight={font.xHeight}
-            capHeight={font.capHeight}
-            scale={scale}
-            baseline={baseline}
-            x={x}
-            advanceWidth={glyph.advanceWidth}
-          />
-
-          <Group opacity={1}>
-            {!!drawingData && (
+          <Provider store={store}>
+            <Metrics
+              width={bounds.width}
+              height={bounds.height}
+              ascent={font.ascent}
+              descent={font.descent}
+              xHeight={font.xHeight}
+              capHeight={font.capHeight}
+              scale={scale}
+              baseline={baseline}
+              x={x}
+              advanceWidth={glyph.advanceWidth}
+            />
+            <Group opacity={1}>
+              {!!drawingData && (
+                <Path
+                  data={drawingData}
+                  strokeWidth={settings.viewMode === "outline" ? 2 : 0}
+                  stroke="#3b82f6"
+                  fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
+                />
+              )}
               <Path
-                data={drawingData}
-                strokeWidth={settings.viewMode === "outline" ? 2 : 0}
+                x={x}
+                y={baseline}
+                data={data}
+                scaleX={scale}
+                scaleY={-scale}
+                strokeWidth={
+                  settings.viewMode === "outline" ? 2 / (scale || 0.1) : 0
+                }
                 stroke="#3b82f6"
                 fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
               />
-            )}
-            <Path
-              x={x}
-              y={baseline}
-              data={data}
-              scaleX={scale}
-              scaleY={-scale}
-              strokeWidth={
-                settings.viewMode === "outline" ? 2 / (scale || 0.1) : 0
-              }
-              stroke="#3b82f6"
-              fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
-            />
-            {!!newPoint && (
-              <>
-                <Handle
-                  scale={scale}
-                  baseline={baseline}
-                  x={x}
-                  index={0}
-                  handles={commandsArray}
-                  onDrag={(e) => {
-                    console.log("drag", e);
-                  }}
-                  handle={{
-                    id: "new",
-                    command: "lineTo",
-                    args: [newPoint.point.x, newPoint.point.y],
-                  }}
-                  onDragEnd={onDragEnd}
-                  onActivate={() => {
-                    const newPoint = getNewPoint();
-                    if (!newPoint) {
-                      return;
-                    }
-                    const id = insertPoint(newPoint);
-                    console.log("id", id);
+              {!!newPoint && (
+                <>
+                  {/* <Handle
+                      scale={scale}
+                      baseline={baseline}
+                      x={x}
+                      index={0}
+                      handles={commandsArray}
+                      onDrag={(e) => {
+                        console.log("drag", e);
+                      }}
+                      handle={{
+                        id: "new",
+                        command: "lineTo",
+                        args: [newPoint.point.x, newPoint.point.y],
+                      }}
+                      onDragEnd={onDragEnd}
+                      onActivate={() => {
+                        const newPoint = getNewPoint();
+                        if (!newPoint) {
+                          return;
+                        }
+                        const id = insertPoint(newPoint);
+                        console.log("id", id);
+  
+                        resetNewPoint();
+                      }}
+                      isSelected={false}
+                    /> */}
+                  {/* 
+                  <Text
+                    fontSize={11}
+                    text={`[${newPoint.index}] ${Math.round(
+                      newPoint.point.x
+                    )},${Math.round(newPoint.point.y)} `}
+                    x={newPoint.point.x}
+                    y={newPoint.point.y - 14}
+                  ></Text> */}
+                </>
+              )}
 
-                    resetNewPoint();
-                  }}
-                  isSelected={false}
-                />
-                {/* 
-                <Text
-                  fontSize={11}
-                  text={`[${newPoint.index}] ${Math.round(
-                    newPoint.point.x
-                  )},${Math.round(newPoint.point.y)} `}
-                  x={newPoint.point.x}
-                  y={newPoint.point.y - 14}
-                ></Text> */}
-              </>
-            )}
-            <Handles
-              baseline={baseline}
-              x={x}
-              onSelect={onHandleSelected}
-              onHover={onHandleHover}
-              handles={commandsArray}
-              selectedHandles={selectedHandles}
-              scale={scale}
-              onActivate={onHandleActivate}
-              onDrag={onDrag}
-              onDragEnd={onDragEnd}
-              hovered={hoveredCommands}
-              active={activeCommands}
-            />
-          </Group>
-
-          {guidelines.map((guideline, index) => {
-            const origin = toCanvasPoint(
-              guideline.points[2],
-              guideline.points[3]
-            );
-            const destination = toCanvasPoint(
-              guideline.points[0],
-              guideline.points[1]
-            );
-
-            if (guideline.command === "x" || guideline.command === "width") {
-              origin[1] = 0;
-              destination[1] = height;
-            } else if (
-              [
-                "baseline",
-                "ascent",
-                "descent",
-                "xHeight",
-                "capHeight",
-              ].includes(guideline.command)
-            ) {
-              origin[0] = 0;
-              destination[0] = width;
-            }
-
-            return (
-              <Guideline
-                key={index}
-                points={
-                  [...destination, ...origin] as [
-                    number,
-                    number,
-                    number,
-                    number
-                  ]
-                }
+              <Handles
+                scale={scale}
+                baseline={baseline}
+                x={x}
+                onDrag={onDrag}
+                onDragEnd={onDragEnd}
+                ids={ids}
               />
-            );
-          })}
+            </Group>
 
-          <Preview
-            viewMode={settings.viewMode}
-            glyph={glyph}
-            commands={commandsArray}
-            font={font}
-            data={data}
-          />
+            {guidelines.map((guideline, index) => {
+              const origin = toCanvasPoint(
+                guideline.points[2],
+                guideline.points[3]
+              );
+              const destination = toCanvasPoint(
+                guideline.points[0],
+                guideline.points[1]
+              );
+
+              if (guideline.command === "x" || guideline.command === "width") {
+                origin[1] = 0;
+                destination[1] = height;
+              } else if (
+                [
+                  "baseline",
+                  "ascent",
+                  "descent",
+                  "xHeight",
+                  "capHeight",
+                ].includes(guideline.command)
+              ) {
+                origin[0] = 0;
+                destination[0] = width;
+              }
+
+              return (
+                <Guideline
+                  key={index}
+                  points={
+                    [...destination, ...origin] as [
+                      number,
+                      number,
+                      number,
+                      number
+                    ]
+                  }
+                />
+              );
+            })}
+
+            <Preview
+              viewMode={settings.viewMode}
+              glyph={glyph}
+              commands={commandsArray}
+              font={font}
+              data={data}
+            />
+          </Provider>
         </Layer>
       </Stage>
     </div>

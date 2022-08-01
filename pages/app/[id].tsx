@@ -21,7 +21,13 @@ import GlyphList from "../../components/GlyphList";
 import loadFont from "../../api/loadFont";
 import { saveFont } from "../../db/database";
 import useFontSelector from "../../utils/useFontSelector";
-
+import { useAppDispatch, useAppSelector } from "../../hooks/store";
+import {
+  selectSelectedGlyphId,
+  setFont,
+  setSelectedGlyph,
+} from "../../store/font/reducer";
+import { selectWorkspace, setReady } from "../../store/workspace/reducer";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -34,6 +40,17 @@ const App: NextPage = () => {
     networkMode: "always",
     retry: 0,
   });
+
+  const dispatch = useAppDispatch();
+  const isReady = useAppSelector((state) => selectWorkspace(state).ready);
+
+  useEffect(() => {
+    if (query.data) {
+      dispatch(setFont(query.data));
+
+      dispatch(setReady());
+    }
+  }, [query.data]);
 
   const [settings, setSettings] = useState<Settings>({
     gridSize: 20,
@@ -50,7 +67,7 @@ const App: NextPage = () => {
     // saveFont(font);
   };
 
-  const [selected, setSelected] = useState<string>(String(router.query.glyph));
+  const selected = useAppSelector(selectSelectedGlyphId);
 
   const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
 
@@ -69,7 +86,7 @@ const App: NextPage = () => {
 
   const getFont = useFontSelector(fontId);
 
-  const getSelected = useFresh(selected);
+  const [getSelected] = useFresh(selected);
 
   const { glyphs, font } = useMemo(() => {
     if (!query.data) {
@@ -97,13 +114,13 @@ const App: NextPage = () => {
 
     const queryGlyph = String(router.query.glyph);
     if (router.query.glyph && font.glyphs.ids.includes(queryGlyph)) {
-      setSelected(queryGlyph);
+      dispatch(setSelectedGlyph(queryGlyph));
       return;
     }
     const id = font.glyphs.ids[Math.floor(font.glyphs.ids.length / 4)];
 
     if (id) {
-      setSelected(id);
+      dispatch(setSelectedGlyph(id));
     }
   }, [query.isLoading, query.isSuccess, router.query.glyph]);
 
@@ -116,7 +133,8 @@ const App: NextPage = () => {
         return;
       }
 
-      console.log(selected);
+
+    
       updateFont({
         ...font,
         glyphs: {
@@ -243,6 +261,7 @@ const App: NextPage = () => {
       return ids;
     });
   }, []);
+
   if (query.isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center text-xl font-light flex-col space-y-4">
@@ -268,6 +287,7 @@ const App: NextPage = () => {
 
   return (
     <div className="h-screen flex  overflow-hidden">
+      
       <div className={`fixed bottom-2 space-y-2 z-50 left-[240px] ml-2`}>
         <div className="flex space-x-2 items-end">
           <Button onClick={history.undo} disabled={!history.canUndo}>
@@ -310,7 +330,7 @@ const App: NextPage = () => {
 
       <GlyphList font={font} glyphs={glyphs} selected={selected} />
 
-      {!!glyph && (
+      {isReady && !!glyph && (
         <KeyboardEventsProvider className="flex-1  w-full  overflow-hidden">
           <Editor
             history={history}

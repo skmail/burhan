@@ -83,7 +83,7 @@ export default function useHighlightNewPoint({
   const resetNewPoint = useCallback(() => setNewPoint(undefined), []);
   const { keys } = useKeyboard();
 
-  const getProps = useFresh({
+  const [getProps] = useFresh({
     x,
     scale,
     baseline,
@@ -205,7 +205,7 @@ export default function useHighlightNewPoint({
     setNewPoint(undefined);
   }, []);
 
-  const getNewPoint = useFresh(newPoint);
+  const [getNewPoint] = useFresh(newPoint);
 
   return {
     newPoint,

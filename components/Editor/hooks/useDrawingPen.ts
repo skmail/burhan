@@ -22,7 +22,7 @@ export default function useDrawingPen({
   commands,
   onCommandsAdd,
 }: Props) {
-  const getFreshCommands = useFresh(commands);
+  const [getFreshCommands] = useFresh(commands);
 
   useEffect(() => {
     return;
