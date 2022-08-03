@@ -36,6 +36,7 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
 import NewInputHandle from "./NewPointHandle";
 import useCommandStore from "../../store/commands/reducer";
+import Guidelines from "./Guidelines";
 
 interface Props {
   selectedHandles: string[];
@@ -51,10 +52,6 @@ function Editor({
   history,
   onCommandsAdd,
 }: Props) {
-  const [isHoveringHandle, setIsHoveringHandle] = useState(false);
-
-  const [guidelines, setGuidelines] = useState<GuidelineType[]>([]);
-
   const ref = useRef<HTMLDivElement>(null);
   const bounds = useBounnds(ref);
 
@@ -131,10 +128,6 @@ function Editor({
     },
   ];
 
-  const toCanvasPoint = (_x: number, _y: number) => {
-    return [x + _x * scale, baseline - _y * scale];
-  };
-
   const [getFreshCommands] = useFresh(glyph.path.commands);
 
   const keys = useWorkspaceStore((state) => state.keyboard, shallow);
@@ -158,7 +151,6 @@ function Editor({
     scale,
     settings,
     snapPoints: points,
-    setGuidelines,
     history,
   });
 
@@ -377,53 +369,14 @@ function Editor({
             />
           </Group>
 
-          {guidelines.map((guideline, index) => {
-            const origin = toCanvasPoint(
-              guideline.points[2],
-              guideline.points[3]
-            );
-            const destination = toCanvasPoint(
-              guideline.points[0],
-              guideline.points[1]
-            );
+          <Guidelines
+            baseline={baseline}
+            width={width}
+            scale={scale}
+            x={x}
+            height={height}
+          />
 
-            if (guideline.command === "x" || guideline.command === "width") {
-              origin[1] = 0;
-              destination[1] = height;
-            } else if (
-              [
-                "baseline",
-                "ascent",
-                "descent",
-                "xHeight",
-                "capHeight",
-              ].includes(guideline.command)
-            ) {
-              origin[0] = 0;
-              destination[0] = width;
-            }
-
-            return (
-              <Guideline
-                key={index}
-                points={
-                  [...destination, ...origin] as [
-                    number,
-                    number,
-                    number,
-                    number
-                  ]
-                }
-              />
-            );
-          })}
-          {/* <Preview
-            viewMode={settings.viewMode}
-            glyph={glyph}
-            commands={commandsArray}
-            font={font}
-            data={data}
-          /> */}
           <Ruler
             scrollPosition={x / scale}
             size={Math.max(width, height)}

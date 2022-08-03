@@ -5,6 +5,7 @@ import useFreshSelector from "../../../hooks/useFreshSelector";
 import useCommandStore from "../../../store/commands/reducer";
 
 import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
+import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import {
   Settings,
   OnHandleDrag,
@@ -27,19 +28,16 @@ interface Props {
   settings: Settings;
 
   snapPoints: Command[];
-  setGuidelines: (guidelines: SetStateAction<Guideline[]>) => void;
   history: HistoryManager;
 }
 export default function useHandleDrag({
   scaleWithoutZoom,
   scale,
   settings,
-
   snapPoints,
-  setGuidelines,
-
   history,
 }: Props) {
+  const setGuidelines = useWorkspaceStore((state) => state.setGuidelines);
   const [getScaleWithoutZoom] = useFresh(scaleWithoutZoom);
   const [getScale] = useFresh(scale);
   const [getSettings] = useFresh(settings);
@@ -47,8 +45,10 @@ export default function useHandleDrag({
   const getFreshCommands = useFreshSelector(useFontStore, selectCommandsTable);
   const updateCommands = useFontStore((state) => state.updateCommands);
 
-  const selections = useCommandStore((state) => state.selected, shallow);
-  const [getSelectedHandleIds] = useFresh(selections);
+  const getSelectedHandleIds = useFreshSelector<string[]>(
+    useCommandStore,
+    (state) => state.selected
+  );
 
   const [isDragging, setIsDragging] = useState(false);
   const [getSnapPoints] = useFresh(snapPoints);
@@ -71,13 +71,13 @@ export default function useHandleDrag({
     const scaleWithoutZoom = getScaleWithoutZoom();
     const settings = getSettings();
     const commands = cacheCommands.current;
+    const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
+
     const selections = getSelectedHandleIds().reduce((acc, id) => {
       if (acc.includes(id) || !commands.items[id]) {
         return acc;
       }
-
       const command = commands.items[id];
-
       acc.push(id);
       const index = commands.ids.indexOf(command.id);
       if (command.command === "bezierCurveTo") {
@@ -92,9 +92,6 @@ export default function useHandleDrag({
     }, [] as string[]);
 
     const command = commands.items[handle.id];
-
-    const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
-
     let xy: PointTuple = [
       command.args[0] + amountToMove[0],
       command.args[1] + amountToMove[1],
@@ -108,7 +105,7 @@ export default function useHandleDrag({
 
     if (options.allowSnap) {
       const snapPoints = [...(getSnapPoints() as any)];
-      for (let id of cacheCommands.current.ids) {
+      for (let id of commands.ids) {
         if (selections.includes(id)) {
           continue;
         }
@@ -154,7 +151,7 @@ export default function useHandleDrag({
       }
       let args: PointTuple;
       if (id === handle.id) {
-        args = xy;
+        args = [...xy];
       } else {
         args = [
           cmd.args[0] + amountToMove[0] + snapDiff[0],

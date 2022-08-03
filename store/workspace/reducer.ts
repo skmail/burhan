@@ -1,5 +1,6 @@
 import create from "zustand";
 import produce from "immer";
+import { Guideline } from "../../types";
 
 interface State {
   ready: boolean;
@@ -12,11 +13,21 @@ interface State {
 
   rightSidebar: boolean;
   toggleRightSidebarSide: () => void;
+  guidelines: Guideline[];
+  setGuidelines: (guidelines: Guideline[]) => void;
 }
 
 export const useWorkspaceStore = create<State>((set) => ({
   ready: false,
   keyboard: {},
+  guidelines: [],
+
+  setGuidelines: (guidelines) =>
+    set(
+      produce<State>((state) => {
+        state.guidelines = guidelines;
+      })
+    ),
 
   leftSidebar: true,
   toggleLeftSidebarSide: () =>

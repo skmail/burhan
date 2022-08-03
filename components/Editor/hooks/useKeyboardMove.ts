@@ -19,6 +19,8 @@ export default function useKeyboardMove({
   onDrag,
   onDragEnd,
 }: Props) {
+  const setGuidelines = useWorkspaceStore((state) => state.setGuidelines);
+
   const keys = useWorkspaceStore(
     (state) => ({
       ArrowUp: state.keyboard.ArrowUp,
@@ -30,8 +32,11 @@ export default function useKeyboardMove({
     }),
     shallow
   );
-  const selections = useCommandStore((state) => state.selected, shallow);
-  const [getSelections] = useFresh(selections);
+
+  const getSelections = useFreshSelector(
+    useCommandStore,
+    (state) => state.selected
+  );
   const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
 
   useEffect(() => {
@@ -44,40 +49,42 @@ export default function useKeyboardMove({
       return;
     }
     const selections = getSelections();
-
     if (!selections.length) {
       return;
     }
 
-    const moveUp = () => {
+    const move = () => {
       const firstHandle = getCommands().items[selections[0]];
+      if (!firstHandle) {
+        return;
+      }
       const args: PointTuple = [0, 0];
       let a = 1;
-      let snap = true;
+      let allowSnap = true;
       if (keys.ShiftLeft) {
         a = settings.gridSize;
       } else if (keys.AltLeft) {
         a = settings.gridSize / 4;
       } else {
-        snap = false;
+        allowSnap = false;
       }
 
       const amount = a * zoom;
 
       if (keys.ArrowUp) {
-        args[1] += amount;
+        args[1] = amount;
       }
 
       if (keys.ArrowLeft) {
-        args[0] -= amount;
+        args[0] = -amount;
       }
 
       if (keys.ArrowRight) {
-        args[0] += amount;
+        args[0] = amount;
       }
 
       if (keys.ArrowDown) {
-        args[1] -= amount;
+        args[1] = -amount;
       }
 
       onDrag(
@@ -86,28 +93,29 @@ export default function useKeyboardMove({
           args,
         },
         {
-          allowSnap: snap,
+          allowSnap,
         }
       );
 
       onDragEnd();
     };
 
-    moveUp();
-    const interval = setInterval(() => moveUp(), 200);
+    move();
+
+    const interval = setInterval(move, 100);
 
     return () => {
-      //   setGuidelines([]);
       clearInterval(interval);
+      setGuidelines([]);
     };
   }, [
     keys.ArrowUp,
     keys.ArrowLeft,
     keys.ArrowRight,
     keys.ArrowDown,
-    zoom,
     keys.ShiftLeft,
     keys.AltLeft,
     settings.gridSize,
+    zoom,
   ]);
 }

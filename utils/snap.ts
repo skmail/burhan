@@ -79,10 +79,10 @@ export default function snap(
   const grid = gridSize / zoom;
 
   const isInsideGridCell = (v: number, v1: number, grid: number) => {
-    const value = Math.round(Math.abs(v - v1));
-
+    const value = Math.ceil(Math.abs(v - v1));
     return value < grid / 4;
   };
+
   if (!fromPoints.x && gridSize) {
     const roundedX = Math.round(result.args[0] / grid) * grid;
     if (isInsideGridCell(roundedX, result.args[0], grid)) {
