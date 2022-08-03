@@ -208,8 +208,8 @@ export default function Handle({
       ? "#3b82f6"
       : handle.command === "moveTo"
       ? "red"
-      : "#9ca3af",
-    strokeWidth: states.isHovered ? 2 : 1,
+      : "#4D7FEE",
+    strokeWidth: states.isHovered ? 2 : 1.5,
     x: x + handle.args[0] * scale,
     y: baseline - handle.args[1] * scale,
     fill: states.isSelected ? "#3b82f6" : "white",
@@ -241,6 +241,7 @@ export default function Handle({
           y={props.y - 3}
           x={props.x}
           rotation={45}
+          cornerRadius={1}
         />
       )}
 

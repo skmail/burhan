@@ -15,7 +15,6 @@ export default function HorizontalRuler({
   direction = "horizontal",
   scrollPosition,
 }: Props) {
-  console.log(size)
   const barSize = 25;
   let unit = size / zoom / (size / 100);
   if (unit < 5) {
@@ -23,21 +22,21 @@ export default function HorizontalRuler({
   } else if (unit < 10) {
     unit = 2;
   } else if (unit < 25) {
-    unit = 10;
+    unit = 15;
   } else if (unit < 50) {
     unit = 25;
-  } else if (unit < 250) {
+  } else if (unit < 100) {
+    unit = 50;
+  } else if (unit < 300) {
     unit = 100;
   } else if (unit < 500) {
     unit = 250;
   } else if (unit < 1000) {
     unit = 500;
-  } else if (unit < 1000) {
-    unit = 1000;
-  } else if (unit < 50000) {
+  } else if (unit < 10000) {
     unit = 2500;
-  } else if (unit < 100000) {
-    unit = 20000;
+  } else {
+    unit = 10000;
   }
   // zoom = zo;
   const zoomUnit = unit * zoom;
@@ -111,18 +110,23 @@ export default function HorizontalRuler({
       x: 0,
       y: barSize,
     };
-    // groupProps.clipY = 1
-    // groupProps.clipWidth = 1;
-    // groupProps.clipHeight = size;
   } else {
     rectProps.x = barSize;
-    // groupProps.clipHeight = size - barSize;
-    // groupProps.clipWidth = barSize;
   }
-  // console.log(points);
+
   return (
     <Group {...groupProps} x={0} y={0}>
-      <Rect {...rectProps} fill="#000"></Rect>
+      <Rect {...rectProps} fill="#F3F5F7"></Rect>
+      <Rect
+        width={direction === "horizontal" ? size : 0}
+        height={direction === "horizontal" ? 0 : size}
+        x={direction === "horizontal" ? 0 : barSize}
+        y={direction === "horizontal" ? barSize : 0}
+
+        fill="#F3F5F7"
+        stroke={"#C4CBD7"}
+        strokeWidth={2}
+      />
       {points.map((value, index) => (
         <RulerNode
           label={value.label}
@@ -153,14 +157,13 @@ const RulerNode = ({
       <Rect
         x={direction === "horizontal" ? x : 20}
         y={direction === "horizontal" ? 20 : y}
-        
-        height={direction === "horizontal" ? 5 : 2}
+        height={direction === "horizontal" ? 5 : 1}
         width={direction === "horizontal" ? 1 : 5}
-        fill="white"
+        fill="#707C88"
       />
       <Text
         text={`${label}`}
-        fill={"white"}
+        fill={"#707C88"}
         y={direction === "horizontal" ? 5 : y + labelCenter}
         x={direction === "horizontal" ? x - labelCenter : 5}
         rotation={direction === "vertical" ? -90 : 0}

@@ -15,7 +15,7 @@ export default function Grid({ size, width, height, pan, zoom = 1 }: Props) {
 
   return (
     <svg
-      className="absolute left-0 top-0"
+      className="absolute left-0 top-0 text-outline"
       width="100%"
       height="100%"
       xmlns="http://www.w3.org/2000/svg"
@@ -27,27 +27,24 @@ export default function Grid({ size, width, height, pan, zoom = 1 }: Props) {
           height={size}
           patternUnits="userSpaceOnUse"
         >
-          <path
-            d={`M ${size} 0 L 0 0 0 ${size}`}
-            fill="none"
-            stroke="#cbd5e1"
-            strokeWidth="0.5"
-          />
+          <circle
+            id="pattern-circle"
+            cx={size / 2}
+            cy={size / 2}
+            r={1 * zoom}
+            fill="currentColor"
+          ></circle>
         </pattern>
         <pattern
           id="grid"
-          width={size * 4}
-          height={size * 4}
+          width={size}
+          height={size}
           patternUnits="userSpaceOnUse"
           patternTransform={`translate(${translateX}, ${translateY})`}
         >
-          <rect width={size * 4} height={size * 4} fill="url(#smallGrid)" />
-          <path
-            d={`M ${size * 4} 0 L 0 0 0 ${size * 4}`}
-            fill="none"
-            stroke="#cbd5e1"
-            strokeWidth="1"
-          />
+          <rect 
+          transform={`translate(${-size/2}, ${size/-2})`}
+          width={size * 4} height={size * 4} fill="url(#smallGrid)" />
         </pattern>
       </defs>
 

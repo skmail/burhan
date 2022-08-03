@@ -236,7 +236,7 @@ function Editor({
 
   return (
     <div
-      className="bg-gray-100 relative"
+      className="bg-bg-1 relative"
       style={{
         width: bounds.width,
         height: bounds.height,
@@ -325,8 +325,8 @@ function Editor({
               <Path
                 data={drawingData}
                 strokeWidth={settings.viewMode === "outline" ? 2 : 0}
-                stroke="#3b82f6"
-                fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
+                stroke="#4D7FEE"
+                fill={settings.viewMode !== "outline" ? "#4D7FEE" : undefined}
               />
             )}
             <Path
@@ -450,7 +450,7 @@ function Editor({
             zoom={scale}
             direction="vertical"
           />
-          <Rect width={27} height={27} x={-2} y={-2} fill="black" stroke={"gray"} strokeWidth={1} />
+          <Rect width={27} height={27} x={-2} y={-2} fill="#F3F5F7" stroke={"#C4CBD7"} strokeWidth={2} />
         </Layer>
       </Stage>
     </div>

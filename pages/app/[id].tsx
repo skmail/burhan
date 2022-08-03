@@ -25,6 +25,7 @@ import { useFontStore } from "../../store/font/reducer";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
 import useFreshSelector from "../../hooks/useFreshSelector";
+import Header from "../../components/Header";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -299,166 +300,282 @@ const App: NextPage = () => {
   const glyph = glyphs.items[selected];
 
   return (
-    <div className="h-screen flex  overflow-hidden">
-      <div className={`fixed bottom-2 space-y-2 z-50 left-[240px] ml-2`}>
-        <div className="flex space-x-2 items-end">
-          <Button onClick={history.undo} disabled={!history.canUndo}>
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 22"
-              fill="currentColor"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="m8.687 0-8 8L0 8.719l.687.719 8 8L10.125 16 3.844 9.719h13.062c2.754 0 5 2.246 5 5v7h2v-7c0-3.844-3.156-7-7-7H3.843l6.282-6.281L8.687 0Z" />
-            </svg>
-          </Button>
-          <Button onClick={history.redo} disabled={!history.canRedo}>
-            <svg
-              className="w-5 h-5"
-              viewBox="0 0 24 22"
-              fill="currentColor"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="m15.219 0 8 8 .687.719-.687.719-8 8L13.781 16l6.281-6.281H7a5.01 5.01 0 0 0-5 5v7H0v-7c0-3.844 3.156-7 7-7h13.063l-6.282-6.281L15.219 0Z" />
-            </svg>
-          </Button>
+    <div className="h-screen flex flex-col bg-white  overflow-hidden">
+      <Header />
 
-          <Button onClick={toggleViewMode} className="uppercase">
-            {settings.viewMode}
-          </Button>
+      <div className="flex flex-1 h-full overflow-hidden">
+        <div className={`fixed bottom-2 space-y-2 z-50 left-[240px] ml-2`}>
+          <div className="flex space-x-2 items-end">
+            <Button className="uppercase relative overflow-hidden cursor-pointer">
+              <input
+                onChange={onImport}
+                className="opacity-0 inset-0 absolute"
+                type="file"
+              />
+              Import
+            </Button>
 
-          <Button className="uppercase relative overflow-hidden cursor-pointer">
-            <input
-              onChange={onImport}
-              className="opacity-0 inset-0 absolute"
-              type="file"
-            />
-            Import
-          </Button>
-
-          <ToOpenType selected={selected} font={query.data} />
+            <ToOpenType selected={selected} />
+          </div>
         </div>
-      </div>
 
-      <GlyphList font={font} glyphs={glyphs} selected={selected} />
+        <GlyphList font={font} glyphs={glyphs} selected={selected} />
 
-      {isReady && !!glyph && (
-        <KeyboardEventsProvider className="flex-1  w-full  overflow-hidden">
-          <Editor
-            key={fontState.selectedGlyphId}
-            history={history}
-            settings={settings}
-            onCommandsAdd={onCommandsAdd}
-            onCommandsUpdate={updateCommands}
-            onSelectHandles={onSelectHandles}
-            font={font}
-            glyph={glyph}
-            selectedHandles={selectedHandles}
-          />
-        </KeyboardEventsProvider>
-      )}
+        {isReady && !!glyph && (
+          <KeyboardEventsProvider className="flex-1 relative w-full focus:outline-none  overflow-hidden">
+            <div className="flex absolute left-10 top-10 z-50">
+              <Button
+                roundedR={false}
+                onClick={history.undo}
+                disabled={!history.canUndo}
+              >
+                <svg
+                  className="w-8 h-8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M9.375 10.4056H14.625C16.0723 10.4056 17.25 11.5916 17.25 13.049C17.25 14.5063 16.0723 15.6923 14.625 15.6923H12V17.4545H14.625C17.0374 17.4545 19 15.4782 19 13.049C19 10.6197 17.0374 8.64336 14.625 8.64336H9.375V6L5 9.52448L9.375 13.049V10.4056Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </Button>
+              <Button
+                roundedL={false}
+                onClick={history.redo}
+                disabled={!history.canRedo}
+              >
+                <svg
+                  className="w-8 h-8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M9.375 17.375H12V15.625H9.375C7.92775 15.625 6.75 14.4472 6.75 13C6.75 11.5527 7.92775 10.375 9.375 10.375H14.625V13L19 9.5L14.625 6V8.625H9.375C6.96262 8.625 5 10.5876 5 13C5 15.4124 6.96262 17.375 9.375 17.375Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </Button>
+            </div>
 
-      <div className="bg-white w-64 w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
-        <div>
-          <label className="text-sm uppercase text-gray-700">Grid size</label>
-          <input
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (!isNaN(value)) {
+            <div className="absolute right-4 top-10 z-50 flex">
+              <Button roundedR={false} className="px-3 pr-2">
+                Download .SVG
+                <svg
+                  className="w-8 h-8 ml-2"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 14.4L14.8 10.9H12.7V6H11.3V10.9H9.2L12 14.4Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M17.6 15.8H6.4V10.9H5V15.8C5 16.5721 5.6279 17.2 6.4 17.2H17.6C18.3721 17.2 19 16.5721 19 15.8V10.9H17.6V15.8Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </Button>
+
+              <Button roundedL={false} className="px-3 pr-2">
+                Replace .SVG
+                <svg
+                  className="w-8 h-8 ml-2"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M11.3 13.7H12.7V9.5H14.8L12 6L9.2 9.5H11.3V13.7Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M17.6 15.8H6.4V10.9H5V15.8C5 16.5721 5.6279 17.2 6.4 17.2H17.6C18.3721 17.2 19 16.5721 19 15.8V10.9H17.6V15.8Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </Button>
+
+              <Button className="ml-4">
+                <svg
+                  className="w-8 h-8"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M5 8.68h14V9.8H5zM5 14.28h14v1.12H5z"
+                  />
+                  <circle cx="15.08" cy="9.24" r="2.24" fill="currentColor" />
+                  <circle cx="8.92" cy="14.84" r="2.24" fill="currentColor" />
+                </svg>
+              </Button>
+            </div>
+
+            <div className="absolute right-4 top-20 mt-2 z-50 flex flex-col">
+              <Button
+                className="w-8"
+                active={settings.viewMode === "outline"}
+                roundedB={false}
+              >
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="4"
+                    transform="rotate(-90 8 8)"
+                    stroke="#4D7FEE"
+                    stroke-width="2"
+                  />
+                </svg>
+              </Button>
+              <Button
+                className="w-8"
+                active={settings.viewMode === "outline"}
+                roundedT={false}
+              >
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="8"
+                    cy="8"
+                    r="4"
+                    transform="rotate(-90 8 8)"
+                    fill="#4D7FEE"
+                    stroke-width="2"
+                  />
+                </svg>
+              </Button>
+            </div>
+            <Editor
+              key={fontState.selectedGlyphId}
+              history={history}
+              settings={settings}
+              onCommandsAdd={onCommandsAdd}
+              onCommandsUpdate={updateCommands}
+              onSelectHandles={onSelectHandles}
+              font={font}
+              glyph={glyph}
+              selectedHandles={selectedHandles}
+            />
+          </KeyboardEventsProvider>
+        )}
+
+        <div className="bg-white w-64 w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
+          <div>
+            <label className="text-sm uppercase text-gray-700">Grid size</label>
+            <input
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value)) {
+                  setSettings((settings) => ({
+                    ...settings,
+                    gridSize: value,
+                  }));
+                }
+              }}
+              className="p-1 text-sm rounded-md border border-gray-300"
+              value={settings.gridSize}
+              type="number"
+            />
+          </div>
+          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+            <input
+              className="mr-2"
+              onChange={(e) => {
                 setSettings((settings) => ({
                   ...settings,
-                  gridSize: value,
+                  snapToGrid: e.target.checked,
                 }));
-              }
-            }}
-            className="p-1 text-sm rounded-md border border-gray-300"
-            value={settings.gridSize}
-            type="number"
-          />
-        </div>
-        <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-          <input
-            className="mr-2"
-            onChange={(e) => {
-              setSettings((settings) => ({
-                ...settings,
-                snapToGrid: e.target.checked,
-              }));
-            }}
-            type="checkbox"
-            checked={settings.snapToGrid}
-          />
-          <span className="-mt-0.5">Snap to grid</span>
-        </label>
-
-        <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-          <input
-            className="mr-2"
-            onChange={(e) => {
-              setSettings((settings) => ({
-                ...settings,
-                snapToOtherPoints: e.target.checked,
-              }));
-            }}
-            type="checkbox"
-            checked={settings.snapToOtherPoints}
-          />
-          <span className="-mt-0.5">Snap to other points</span>
-        </label>
-
-        <div>
-          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-            Vector mirror
+              }}
+              type="checkbox"
+              checked={settings.snapToGrid}
+            />
+            <span className="-mt-0.5">Snap to grid</span>
           </label>
-          <select
-            className="p-1 text-sm rounded-md border border-gray-300"
-            value={settings.vectorMirrorType}
-            onChange={(e) => {
-              setSettings((settings) => ({
-                ...settings,
-                vectorMirrorType: e.target
-                  .value as Settings["vectorMirrorType"],
-              }));
-            }}
-          >
-            <option value="none">None</option>
-            <option value="angle">Angle</option>
-            <option value="angleLength">Angle and length</option>
-          </select>
-        </div>
 
-        {!!glyph && (
-          <GlyphInfo
-            onFitWidth={() => {
-              const bbox = computCommandsBounds(glyph.path.commands);
-              const font = getFont();
+          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+            <input
+              className="mr-2"
+              onChange={(e) => {
+                setSettings((settings) => ({
+                  ...settings,
+                  snapToOtherPoints: e.target.checked,
+                }));
+              }}
+              type="checkbox"
+              checked={settings.snapToOtherPoints}
+            />
+            <span className="-mt-0.5">Snap to other points</span>
+          </label>
 
-              if (!font) {
-                return;
-              }
+          <div>
+            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+              Vector mirror
+            </label>
+            <select
+              className="p-1 text-sm rounded-md border border-gray-300"
+              value={settings.vectorMirrorType}
+              onChange={(e) => {
+                setSettings((settings) => ({
+                  ...settings,
+                  vectorMirrorType: e.target
+                    .value as Settings["vectorMirrorType"],
+                }));
+              }}
+            >
+              <option value="none">None</option>
+              <option value="angle">Angle</option>
+              <option value="angleLength">Angle and length</option>
+            </select>
+          </div>
 
-              updateFont({
-                ...font,
-                glyphs: {
-                  ...font.glyphs,
-                  items: {
-                    ...font.glyphs.items,
-                    [selected]: {
-                      ...font.glyphs.items[selected],
-                      bbox,
-                      advanceWidth: bbox.width,
+          {!!glyph && (
+            <GlyphInfo
+              onFitWidth={() => {
+                const bbox = computCommandsBounds(glyph.path.commands);
+                const font = getFont();
+
+                if (!font) {
+                  return;
+                }
+
+                updateFont({
+                  ...font,
+                  glyphs: {
+                    ...font.glyphs,
+                    items: {
+                      ...font.glyphs.items,
+                      [selected]: {
+                        ...font.glyphs.items[selected],
+                        bbox,
+                        advanceWidth: bbox.width,
+                      },
                     },
                   },
-                },
-              });
-            }}
-            glyph={glyph}
-          />
-        )}
-        <FontInfo font={font} />
-      </div>
+                });
+              }}
+              glyph={glyph}
+            />
+          )}
+          <FontInfo font={font} />
+        </div>
 
-      {/* <ImageTest /> */}
+        {/* <ImageTest /> */}
+      </div>
     </div>
   );
 };
