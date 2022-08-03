@@ -1,3 +1,4 @@
+import { memo } from "react";
 import shallow from "zustand/shallow";
 import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
 import { OnHandleDrag } from "../../types";
@@ -13,6 +14,7 @@ interface Props {
 }
 function Handles({ baseline, x, scale, onDrag, onDragEnd }: Props) {
   const ids = useFontStore((state) => selectCommandsTable(state).ids, shallow);
+
   return (
     <>
       {ids.map((id) => (
@@ -30,4 +32,4 @@ function Handles({ baseline, x, scale, onDrag, onDragEnd }: Props) {
   );
 }
 
-export default Handles;
+export default memo(Handles);

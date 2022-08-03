@@ -1,6 +1,8 @@
 import { Bezier } from "bezier-js";
 import { useCallback } from "react";
 import useFresh from "../../../hooks/useFresh";
+import useFreshSelector from "../../../hooks/useFreshSelector";
+import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
 import { Command, NewPoint, OnCommandsAdd, Point, Table } from "../../../types";
 
 function insert<T>(arr: T[], index: number, newItem: T[], to = 0) {
@@ -36,17 +38,14 @@ const toBzCommands = (p1: Point, p2: Point, p3: Point) => {
     },
   ];
 };
-interface Props {
-  commands: Table<Command>;
-  onCommandsAdd: OnCommandsAdd;
-}
-export default function useInsertPoint({ commands, onCommandsAdd }: Props) {
-  const [getProps] = useFresh({
-    commands,
-  });
+
+export default function useInsertPoint() {
+  const replaceCommands = useFontStore((state) => state.replaceCommands);
+  const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
+
   const onInsert = useCallback((newPoint: NewPoint) => {
     let primaryId = "";
-    const { commands } = getProps();
+    const commands = getCommands();
     const index = commands.ids.indexOf(newPoint.command.id);
     const p = commands.items[newPoint.command.id];
 
@@ -62,7 +61,7 @@ export default function useInsertPoint({ commands, onCommandsAdd }: Props) {
       primaryId = lineTo.id;
 
       const ids = insert(commands.ids, index, [lineTo.id]);
-      onCommandsAdd({
+      replaceCommands({
         ids: ids,
         items: {
           [lineTo.id]: lineTo,
@@ -80,14 +79,12 @@ export default function useInsertPoint({ commands, onCommandsAdd }: Props) {
 
       primaryId = lineTo.id;
 
-      onCommandsAdd({
+      replaceCommands({
         ids: ids,
         items: {
           [lineTo.id]: lineTo,
         },
       });
-
-      return;
     } else if (newPoint.command.command === "bezierCurveTo") {
       const cp3 = commands.items[commands.ids[index - 3]];
       const cp1 = commands.items[commands.ids[index - 2]];
@@ -134,7 +131,7 @@ export default function useInsertPoint({ commands, onCommandsAdd }: Props) {
       );
       primaryId = newCommands[2].id;
 
-      onCommandsAdd({
+      replaceCommands({
         ids,
         items: newCommands.reduce(
           (acc, item) => ({

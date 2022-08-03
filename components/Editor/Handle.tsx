@@ -6,13 +6,19 @@ import {
   selectCommandsTable,
   useFontStore,
 } from "../../store/font/reducer";
-import { OnHandleDrag, Vector } from "../../types";
+import {
+  Command,
+  OnHandleActivate,
+  OnHandleDrag,
+  PointTuple,
+  Vector,
+} from "../../types";
 import vector2 from "../../utils/vector";
 import toScreenPoint from "../../utils/toScreenPoint";
-import useFreshSelector from "../../hooks/useFreshSelector";
-import { useWorkspaceStore } from "../../store/workspace/reducer";
 import useCommandStore from "../../store/commands/reducer";
 import shallow from "zustand/shallow";
+import useFreshSelector from "../../hooks/useFreshSelector";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 
 interface Props {
   id: string;
@@ -21,7 +27,10 @@ interface Props {
   baseline: number;
   x: number;
   scale: number;
+  onActivate?: OnHandleActivate;
 }
+
+const noob = () => {};
 
 export default function Handle({
   id,
@@ -30,6 +39,7 @@ export default function Handle({
   baseline,
   scale,
   x,
+  onActivate = noob,
 }: Props) {
   const states = useCommandStore(
     (state) => ({
@@ -39,13 +49,23 @@ export default function Handle({
       select: state.select,
       activate: state.activate,
       hover: state.hover,
+      unhover: state.unhover,
       toggleSelected: state.toggleSelected,
       deactivate: state.deactivate,
     }),
     shallow
   );
 
-  const handle = useFontStore(selectCommand(id), shallow);
+  const handle = useFontStore((state) => {
+    if (id === "new" && state.newPoint) {
+      return {
+        id: "new",
+        command: "lineTo",
+        args: [state.newPoint.point.x, state.newPoint.point.y],
+      } as Command;
+    }
+    return selectCommand(id)(state);
+  }, shallow);
 
   const [getStates] = useFresh(states);
 
@@ -54,7 +74,7 @@ export default function Handle({
 
   const [getIsDraggingStarted] = useFresh(isDraggingStarted);
   const [getIsDragging] = useFresh(isDragging);
-  const startPosition = useRef<Vector>(vector2());
+  const startPosition = useRef<Vector>(vector2(undefined, undefined));
 
   const getKeys = useFreshSelector(
     useWorkspaceStore,
@@ -74,6 +94,7 @@ export default function Handle({
       const states = getStates();
 
       states.activate(id);
+      onActivate(id);
       if (getKeys().ShiftLeft) {
         states.toggleSelected(id);
       } else if (!states.isSelected) {
@@ -88,6 +109,15 @@ export default function Handle({
       return;
     }
     const onMouseMove = (e: MouseEvent) => {
+      if (!handle) {
+        return;
+      }
+
+      if (startPosition.current.x === 0 && startPosition.current.y === 0) {
+        startPosition.current.x = e.clientX;
+        startPosition.current.y = e.clientY;
+      }
+
       e.preventDefault();
       e.stopPropagation();
 
@@ -151,7 +181,7 @@ export default function Handle({
 
       document.body.style.cursor = "default";
 
-      states.hover();
+      states.unhover(id);
     },
     [id]
   );

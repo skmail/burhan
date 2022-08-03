@@ -34,6 +34,8 @@ import useDeletePoints from "./hooks/useDeletePoints";
 import Ruler from "./Ruler";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
+import NewInputHandle from "./NewPointHandle";
+import useCommandStore from "../../store/commands/reducer";
 
 interface Props {
   selectedHandles: string[];
@@ -177,23 +179,11 @@ function Editor({
     commands: glyph.path.commands,
   });
 
-  const { highlightNewPoint, newPoint, resetNewPoint, getNewPoint } =
-    useHighlightNewPoint({
-      x,
-      scale,
-      baseline,
-      commands: glyph.path.commands,
-    });
-
-  const insertPoint = useInsertPoint({
-    commands: glyph.path.commands,
-    onCommandsAdd: onCommandsAdd,
+  const { highlightNewPoint, resetNewPoint } = useHighlightNewPoint({
+    x,
+    scale,
+    baseline,
   });
-
-  const onHandleHover = useCallback((isHover: boolean) => {
-    setIsHoveringHandle(isHover);
-    resetNewPoint();
-  }, []);
 
   const onHandleActivate = useCallback(
     (id: string) => {
@@ -222,6 +212,11 @@ function Editor({
 
   const shouldResetZoom = zoom != 1 || pan[0] != 0 || pan[1] != 0;
 
+  const isHandleHovered = useCommandStore(
+    (state) => state.hovered.length > 0 && !state.hovered.includes("new")
+  );
+
+  const hasNewPoint = useFontStore((state) => !!state.newPoint);
   return (
     <div
       className="bg-bg-1 relative transition"
@@ -321,9 +316,14 @@ function Editor({
 
       <Stage
         onMouseMove={(e) => {
-          if (!ref.current || isDragging || isHoveringHandle) {
+          if (isHandleHovered && hasNewPoint) {
+            resetNewPoint();
             return;
           }
+          if (!ref.current || isDragging || isHandleHovered) {
+            return;
+          }
+
           const box = ref.current.getBoundingClientRect();
           highlightNewPoint([e.evt.clientX - box.x, e.evt.clientY - box.y]);
         }}
@@ -364,46 +364,8 @@ function Editor({
               stroke="#3b82f6"
               fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
             />
-            {!!newPoint && (
-              <>
-                {/* <Handle
-                      scale={scale}
-                      baseline={baseline}
-                      x={x}
-                      index={0}
-                      handles={commandsArray}
-                      onDrag={(e) => {
-                        console.log("drag", e);
-                      }}
-                      handle={{
-                        id: "new",
-                        command: "lineTo",
-                        args: [newPoint.point.x, newPoint.point.y],
-                      }}
-                      onDragEnd={onDragEnd}
-                      onActivate={() => {
-                        const newPoint = getNewPoint();
-                        if (!newPoint) {
-                          return;
-                        }
-                        const id = insertPoint(newPoint);
-                        console.log("id", id);
-  
-                        resetNewPoint();
-                      }}
-                      isSelected={false}
-                    /> */}
-                {/* 
-                  <Text
-                    fontSize={11}
-                    text={`[${newPoint.index}] ${Math.round(
-                      newPoint.point.x
-                    )},${Math.round(newPoint.point.y)} `}
-                    x={newPoint.point.x}
-                    y={newPoint.point.y - 14}
-                  ></Text> */}
-              </>
-            )}
+
+            <NewInputHandle scale={scale} x={x} baseline={baseline} />
 
             <Handles
               scale={scale}

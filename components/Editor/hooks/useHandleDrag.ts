@@ -72,10 +72,12 @@ export default function useHandleDrag({
     const settings = getSettings();
     const commands = cacheCommands.current;
     const selections = getSelectedHandleIds().reduce((acc, id) => {
-      if (acc.includes(id)) {
+      if (acc.includes(id) || !commands.items[id]) {
         return acc;
       }
+
       const command = commands.items[id];
+
       acc.push(id);
       const index = commands.ids.indexOf(command.id);
       if (command.command === "bezierCurveTo") {

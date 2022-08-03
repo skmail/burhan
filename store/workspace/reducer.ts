@@ -17,7 +17,7 @@ interface State {
 export const useWorkspaceStore = create<State>((set) => ({
   ready: false,
   keyboard: {},
-  
+
   leftSidebar: true,
   toggleLeftSidebarSide: () =>
     set(

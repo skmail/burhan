@@ -42,8 +42,6 @@ export default function HorizontalRuler({
   const zoomUnit = unit * zoom;
 
   const opacity = Math.ceil(zoom) - zoom;
-  console.log(opacity);
-  // console.log(Math.round(50 * width / 100000 ) * 100000    )
 
   const minRange = Math.floor((-scrollPosition * zoom) / zoomUnit);
   const maxRange = Math.ceil((-scrollPosition * zoom + size) / zoomUnit);
@@ -56,17 +54,15 @@ export default function HorizontalRuler({
 
   const segment = Math.ceil(zoomUnit / size);
 
-  // console.log(segment);
-  // Math.abs(Math.ceil(width / (100 * (zoom - Math.ceil(zoom) ))))
   if (!segment || segment === Infinity) {
     return null;
   }
-  // console.log(segment)
+  
   for (let i = 0; i <= length; ++i) {
     const vv = i + minRange;
     const startValue = vv * unit;
 
-    // console.log(unit);
+    
     const startPos = (startValue + scrollPosition) * zoom;
 
     for (let j = 0; j < segment; ++j) {
@@ -76,7 +72,7 @@ export default function HorizontalRuler({
       if (pos < 0 || pos >= size || value < range[0] || value > range[1]) {
         continue;
       }
-      // console.log(label, roundup(label));
+      
       if (direction === "vertical") {
         points.push({
           x: 0,

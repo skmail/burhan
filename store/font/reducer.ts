@@ -1,4 +1,4 @@
-import { Command, Font, Table } from "../../types";
+import { Command, Font, Table, NewPoint } from "../../types";
 import create from "zustand";
 import produce from "immer";
 
@@ -13,6 +13,8 @@ interface State {
   setDownloadUrl: (url: string) => void;
   nextGlyph: () => void;
   previousGlyph: () => void;
+  newPoint?: NewPoint;
+  setNewPoint: (point?: NewPoint) => void;
 }
 
 export const useFontStore = create<State>((set) => ({
@@ -20,6 +22,14 @@ export const useFontStore = create<State>((set) => ({
   font: undefined,
   selectedGlyphId: "",
   downloadUrl: undefined,
+  newPoint: undefined,
+
+  setNewPoint: (point) =>
+    set(
+      produce<State>((state) => {
+        state.newPoint = point;
+      })
+    ),
   setDownloadUrl: (url: string) =>
     set(
       produce<State>((state) => {
@@ -64,31 +74,10 @@ export const useFontStore = create<State>((set) => ({
           return;
         }
 
-        return {
-          ...state,
-          font: {
-            ...state.font,
-            glyphs: {
-              ...state.font.glyphs,
-              items: {
-                ...state.font.glyphs.items,
-                [selected]: {
-                  ...state.font.glyphs.items[selected],
-                  path: {
-                    ...state.font.glyphs.items[selected].path,
-                    commands: {
-                      ids: table.ids,
-                      items: {
-                        ...state.font.glyphs.items[selected].path.commands
-                          .items,
-                        ...table.items,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+        state.font.glyphs.items[selected].path.commands.ids = table.ids;
+        state.font.glyphs.items[selected].path.commands.items = {
+          ...state.font.glyphs.items[selected].path.commands.items,
+          ...table.items,
         };
       })
     ),

@@ -1,16 +1,11 @@
 import { Bezier } from "bezier-js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import shallow from "zustand/shallow";
 import useFresh from "../../../hooks/useFresh";
+import useFreshSelector from "../../../hooks/useFreshSelector";
+import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
 import { useWorkspaceStore } from "../../../store/workspace/reducer";
-import {
-  Command,
-  Font,
-  NewPoint,
-  Point,
-  PointTuple,
-  Table,
-} from "../../../types";
+import { Command, PointTuple, Table } from "../../../types";
 import computeDistance from "../../../utils/computeDistance";
 import toGlyphPoint from "../../../utils/toGlyphPoint";
 
@@ -18,7 +13,6 @@ interface Props {
   x: number;
   baseline: number;
   scale: number;
-  commands: Font["glyphs"]["items"]["0"]["path"]["commands"];
 }
 
 const computePointOnBezierCurve = (
@@ -73,30 +67,23 @@ const getCommandPoint = (id: string, commands: Table<Command>) => {
   }
 };
 
-export default function useHighlightNewPoint({
-  x,
-  baseline,
-  scale,
-  commands,
-}: Props) {
-  const [newPoint, setNewPoint] = useState<NewPoint>();
-
+export default function useHighlightNewPoint({ x, baseline, scale }: Props) {
+  const setNewPoint = useFontStore((state) => state.setNewPoint);
   const resetNewPoint = useCallback(() => setNewPoint(undefined), []);
   const keys = useWorkspaceStore((state) => state.keyboard, shallow);
-
   const [getProps] = useFresh({
     x,
     scale,
     baseline,
     keys,
-    commands,
   });
+  const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
 
   const highlightNewPoint = useCallback((coords: PointTuple) => {
-    const { x, baseline, scale, keys, commands } = getProps();
+    const { x, baseline, scale, keys } = getProps();
     const pos: PointTuple = toGlyphPoint(coords, [x, baseline], scale);
     const round = keys.ShiftLeft !== true;
-
+    const commands = getCommands();
     let lastMoveTo: Command | undefined;
 
     for (let index = 0; index < commands.ids.length; index++) {
@@ -192,7 +179,8 @@ export default function useHighlightNewPoint({
 
       const result = computePointOnBezierCurve(bz, pos, round);
 
-      const maxDistance = 15 / scale;
+      const maxDistance = 5 / scale;
+      
       if (result && result.distance < maxDistance) {
         setNewPoint({
           point: result.point,
@@ -206,12 +194,8 @@ export default function useHighlightNewPoint({
     setNewPoint(undefined);
   }, []);
 
-  const [getNewPoint] = useFresh(newPoint);
-
   return {
-    newPoint,
     resetNewPoint,
     highlightNewPoint,
-    getNewPoint,
   };
 }

@@ -22,11 +22,13 @@ import loadFont from "../../api/loadFont";
 import { saveFont } from "../../db/database";
 
 import { useFontStore } from "../../store/font/reducer";
-import { useWorkspaceStore } from "../../store/workspace/reducer";
+
 import shallow from "zustand/shallow";
-import useFreshSelector from "../../hooks/useFreshSelector";
+
 import Header from "../../components/Header";
 import DownloadSvgButton from "../../components/Editor/DownloadSvgButton";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
+import useFreshSelector from "../../hooks/useFreshSelector";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -40,10 +42,6 @@ const App: NextPage = () => {
     }),
     shallow
   );
-
-  useEffect(() => {
-    console.log("font state updated");
-  }, [fontState]);
 
   const fontId = `${router.query.id}`;
 
@@ -451,7 +449,7 @@ const App: NextPage = () => {
             <Editor
               history={history}
               settings={settings}
-              onCommandsAdd={onCommandsAdd} 
+              onCommandsAdd={onCommandsAdd}
               onSelectHandles={onSelectHandles}
               selectedHandles={selectedHandles}
             />

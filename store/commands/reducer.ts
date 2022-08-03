@@ -6,10 +6,12 @@ interface State {
   selected: string[];
   active: string[];
 
-  hover: (id?: string) => void;
+  hover: (id: string) => void;
+  unhover: (id: string) => void;
   select: (ids: string | string[]) => void;
   activate: (id: string) => void;
   deactivate: (id: string) => void;
+
   toggleSelected: (id: string) => void;
 }
 
@@ -18,7 +20,7 @@ const useCommandStore = create<State>((set) => ({
   hovered: [],
   selected: [],
   active: [],
-  hover: (id?: string) =>
+  hover: (id: string) =>
     set(
       produce<State>((state) => {
         if (!id && state.hovered.length) {
@@ -29,13 +31,25 @@ const useCommandStore = create<State>((set) => ({
       })
     ),
 
+  unhover: (id: string) =>
+    set(
+      produce<State>((state) => {
+        state.hovered = state.hovered.filter((i) => i !== id);
+      })
+    ),
+
   select: (ids: string | string[]) =>
     set(
       produce<State>((state) => {
         if (Array.isArray(ids)) {
           state.selected = ids;
         } else {
-          state.selected = [ids];
+          if (ids === "new") {
+            // state.selected = [];
+            return;
+          } else {
+            state.selected = [ids];
+          }
         }
       })
     ),
@@ -43,7 +57,9 @@ const useCommandStore = create<State>((set) => ({
   activate: (id: string) =>
     set(
       produce<State>((state) => {
-        if (!id && state.active.length) {
+        if (id === "new") {
+          return;
+        } else if (!id && state.active.length) {
           state.active = [];
         } else if (id) {
           state.active = [id];
