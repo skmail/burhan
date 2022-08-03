@@ -172,7 +172,9 @@ const RulerNode = ({
         rotation={direction === "vertical" ? -90 : 0}
         fontSize={10}
         ref={(node) => {
-          // node?.measureSize().height / 2
+          if (!node) {
+            return;
+          }
           setLabelCenter(node?.getTextWidth() / 2);
         }}
       />

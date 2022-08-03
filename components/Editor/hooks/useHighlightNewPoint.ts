@@ -1,7 +1,6 @@
 import { Bezier } from "bezier-js";
 import { useCallback, useEffect, useState } from "react";
 import shallow from "zustand/shallow";
-import { useKeyboard } from "../../../context/KeyboardEventsProvider";
 import useFresh from "../../../hooks/useFresh";
 import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import {

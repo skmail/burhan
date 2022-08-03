@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Command,
   Font,
-  onCommandsUpdate,
   PointTuple,
   Settings,
   Guideline as GuidelineType,
@@ -37,7 +36,6 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
 
 interface Props {
-  glyph: Font["glyphs"]["items"][0];
   selectedHandles: string[];
   onSelectHandles: (ids: string[]) => void;
   settings: Settings;

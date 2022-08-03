@@ -421,7 +421,7 @@ const App: NextPage = () => {
                     r="4"
                     transform="rotate(-90 8 8)"
                     stroke="currentColor"
-                    stroke-width="2"
+                    strokeWidth="2"
                   />
                 </svg>
               </Button>
@@ -443,7 +443,7 @@ const App: NextPage = () => {
                     r="4"
                     transform="rotate(-90 8 8)"
                     fill="currentColor"
-                    stroke-width="2"
+                    strokeWidth="2"
                   />
                 </svg>
               </Button>
@@ -451,8 +451,7 @@ const App: NextPage = () => {
             <Editor
               history={history}
               settings={settings}
-              onCommandsAdd={onCommandsAdd}
-              onCommandsUpdate={updateCommands}
+              onCommandsAdd={onCommandsAdd} 
               onSelectHandles={onSelectHandles}
               selectedHandles={selectedHandles}
             />
