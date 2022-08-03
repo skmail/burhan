@@ -12,10 +12,8 @@ import { Stage, Layer, Path, Group, Rect } from "react-konva";
 import commandsToPath from "../../utils/commandsToPathData";
 import Metrics from "./Metrics";
 import Handles from "./Handles";
-import { MinusIcon, PlusIcon } from "@heroicons/react/solid";
 import PanningArea from "./PanningArea";
 import Guideline from "./Guideline";
-import Preview from "./Preview";
 import Button from "../Button";
 import SelectionArea from "./SelectionArea";
 import Grid from "./Grid";
@@ -29,7 +27,6 @@ import useZoom from "./hooks/useZoom";
 import useHighlightNewPoint from "./hooks/useHighlightNewPoint";
 import Handle from "./Handle";
 import useInsertPoint from "./hooks/useInsertPoint";
-import { Provider, shallowEqual, useStore } from "react-redux";
 
 import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
 import useKeyboardMove from "./hooks/useKeyboardMove";
@@ -40,10 +37,7 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
 
 interface Props {
-  font: Omit<Font, "glyphs">;
   glyph: Font["glyphs"]["items"][0];
-  onCommandsUpdate: onCommandsUpdate;
-
   selectedHandles: string[];
   onSelectHandles: (ids: string[]) => void;
   settings: Settings;
@@ -51,10 +45,6 @@ interface Props {
   onCommandsAdd: OnCommandsAdd;
 }
 function Editor({
-  font,
-  glyph,
-  onCommandsUpdate,
-
   selectedHandles,
   onSelectHandles,
   settings,
@@ -80,6 +70,10 @@ function Editor({
     pan,
   });
 
+  const font = useFontStore((state) => state.font);
+  const glyph = useFontStore(
+    (state) => state.font?.glyphs.items[state.selectedGlyphId]
+  );
   const width = bounds.width;
   const height = bounds.height;
 
@@ -88,8 +82,6 @@ function Editor({
     (Math.min(height, width) - 120);
 
   const scale = scaleWithoutZoom * zoom;
-
-  const initialX = width / 2 - (glyph.advanceWidth / 2) * scaleWithoutZoom;
 
   const x = width / 2 + pan[0] - (glyph.advanceWidth / 2) * scale;
 
@@ -228,16 +220,13 @@ function Editor({
     [isDrawing]
   );
 
-  const ids = useFontStore(
-    (state) => selectCommandsTable(state).ids,
-    shallowEqual
-  );
+  const ids = useFontStore((state) => selectCommandsTable(state).ids, shallow);
 
   const shouldResetZoom = zoom != 1 || pan[0] != 0 || pan[1] != 0;
 
   return (
     <div
-      className="bg-bg-1 relative transition-all"
+      className="bg-bg-1 relative transition"
       style={{
         width: bounds.width,
         height: bounds.height,

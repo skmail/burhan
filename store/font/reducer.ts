@@ -3,7 +3,7 @@ import create from "zustand";
 import produce from "immer";
 
 interface State {
-  font?: Font;
+  font: Font;
   selectedGlyphId: string;
   setFont: (font: Font) => void;
   setSelectedGlyph: (id: string) => void;
@@ -16,6 +16,7 @@ interface State {
 }
 
 export const useFontStore = create<State>((set) => ({
+  // @ts-ignore
   font: undefined,
   selectedGlyphId: "",
   downloadUrl: undefined,

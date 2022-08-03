@@ -314,7 +314,7 @@ const App: NextPage = () => {
           <GlyphList font={font} glyphs={glyphs} selected={selected} />
         )}
 
-        {isReady && !!glyph && (
+        {isReady && (
           <KeyboardEventsProvider className="flex-1 relative w-full focus:outline-none  overflow-hidden">
             <div className="absolute left-10 bottom-4 z-50">
               <ToOpenType selected={selected} />
@@ -384,10 +384,7 @@ const App: NextPage = () => {
                 </svg>
               </Button>
 
-              <Button
-                onClick={toggleRightSidebarSide}
-                className="ml-4"
-              >
+              <Button onClick={toggleRightSidebarSide} className="ml-4">
                 <svg
                   className="w-8 h-8"
                   viewBox="0 0 24 24"
@@ -452,14 +449,11 @@ const App: NextPage = () => {
               </Button>
             </div>
             <Editor
-              key={fontState.selectedGlyphId}
               history={history}
               settings={settings}
               onCommandsAdd={onCommandsAdd}
               onCommandsUpdate={updateCommands}
               onSelectHandles={onSelectHandles}
-              font={font}
-              glyph={glyph}
               selectedHandles={selectedHandles}
             />
           </KeyboardEventsProvider>
