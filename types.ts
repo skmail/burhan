@@ -89,11 +89,13 @@ export interface Font {
   version: number;
 }
 
+export type ViewMode = "outline" | "solid";
+
 export interface Settings {
   gridSize: number;
   snapToGrid: boolean;
   snapToOtherPoints: boolean;
-  viewMode: "outline" | "solid";
+  viewMode: ViewMode;
   vectorMirrorType: "none" | "angle" | "angleLength";
 }
 

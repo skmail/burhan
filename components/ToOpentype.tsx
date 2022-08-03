@@ -12,6 +12,8 @@ export default function ToOpenType({ selected }: { selected: string }) {
   const [fontUrl, setFontUrl] = useState("");
   const [isLoding, setIsLoading] = useState(false);
   const font = useFontStore((state) => state.font);
+  const setDownloadUrl = useFontStore((state) => state.setDownloadUrl);
+
   const worker = useRef<FontGeneratorWorker>();
 
   useEffect(() => {
@@ -20,11 +22,13 @@ export default function ToOpenType({ selected }: { selected: string }) {
       if (message.type === "done") {
         setFontUrl(message.url);
         setIsLoading(false);
+        setDownloadUrl(message.url);
       }
     });
     return () => {
       if (worker.current) {
         worker.current.destroy();
+        setDownloadUrl("");
       }
     };
   }, []);
@@ -59,21 +63,6 @@ export default function ToOpenType({ selected }: { selected: string }) {
   }
   return (
     <>
-      <Button
-        onClick={() => {
-          const familyName = font.familyName;
-          const styleName = font.subfamilyName;
-          const fileName =
-            familyName.replace(/\s/g, "") + "-" + styleName + ".otf";
-          const link = document.createElement("a");
-          link.href = fontUrl;
-          link.download = fileName;
-          link.click();
-        }}
-      >
-        Download
-      </Button>
-
       <>
         <style
           dangerouslySetInnerHTML={{
@@ -82,7 +71,7 @@ export default function ToOpenType({ selected }: { selected: string }) {
         ></style>
 
         <div className="flex flex-col items-start relative">
-          <span className="text-sm uppercase mb-1 px-2 py-0.5 mb-2 bg-red-500 text-white absolute top-2 left-2">
+          <span className="text-sm uppercase   py-0.5 mb-2 text-icon text-xs text-white absolute top-2 left-2">
             Font testing
           </span>
 
@@ -91,6 +80,7 @@ export default function ToOpenType({ selected }: { selected: string }) {
           )}
 
           <textarea
+            onMouseMove={(e) => e.stopPropagation()}
             style={{
               fontFamily: "'XXX'",
             }}
@@ -102,7 +92,7 @@ export default function ToOpenType({ selected }: { selected: string }) {
               setTestData(e.target.value);
             }}
             placeholder="Test your data here"
-            className="h-24 text-2xl ring focus:outline-none ring-zinc-800 rounded p-2 shadouw  w-64 bg-white pt-9 "
+            className="h-24 text-2xl ring focus:outline-none ring-outline rounded-lg p-2 w-64 bg-white pt-9 "
           ></textarea>
         </div>
       </>

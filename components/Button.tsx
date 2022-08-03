@@ -25,10 +25,10 @@ export default memo(function Button({
     cls = "ring-[1.5px]  text-main  shadow disabled:text-opacity-20 ";
 
     if (active) {
-      cls += " bg-active-1 ring-active-2 z-20 ";
+      cls += "text-active-2  bg-active-1 ring-active-2 z-20 ";
     } else {
       cls +=
-        " bg-bg-2  enabled:hover:ring enabled:hover:ring-gray-300 ring-outline";
+        " bg-bg-2 text-icon enabled:hover:ring enabled:hover:ring-gray-300 ring-outline";
     }
   } else {
     cls =

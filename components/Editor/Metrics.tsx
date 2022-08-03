@@ -71,7 +71,7 @@ export default function Metrics({
       color: "#C4CBD7",
     },
     {
-      name: "leftSide",
+      name: "Left bearing",
       y1: 0,
       y2: height,
       x1: x,
@@ -82,7 +82,7 @@ export default function Metrics({
       origin: height,
     },
     {
-      name: "rightSide" + `${advanceWidth}`,
+      name: "Advance width",
       origin: advanceWidth,
       y1: 0,
       y2: height,

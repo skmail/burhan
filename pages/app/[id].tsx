@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Command, Font } from "../../types";
+import { Command, Font, ViewMode } from "../../types";
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { ExclamationCircleIcon } from "@heroicons/react/solid";
@@ -26,6 +26,7 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
 import useFreshSelector from "../../hooks/useFreshSelector";
 import Header from "../../components/Header";
+import DownloadSvgButton from "../../components/Editor/DownloadSvgButton";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -175,12 +176,12 @@ const App: NextPage = () => {
     [selected, fontId]
   );
 
-  const toggleViewMode = useCallback(() => {
+  const setViewMode = (viewMode: ViewMode) => {
     setSettings((settings) => ({
       ...settings,
-      viewMode: settings.viewMode === "outline" ? "solid" : "outline",
+      viewMode: viewMode,
     }));
-  }, []);
+  };
 
   const onImport = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -275,6 +276,11 @@ const App: NextPage = () => {
       return ids;
     });
   }, []);
+  const leftSidebar = useWorkspaceStore((state) => state.leftSidebar);
+  const [toggleRightSidebarSide, rightSidebar] = useWorkspaceStore(
+    (state) => [state.toggleRightSidebarSide, state.rightSidebar],
+    shallow
+  );
 
   if (query.isLoading) {
     return (
@@ -304,25 +310,16 @@ const App: NextPage = () => {
       <Header />
 
       <div className="flex flex-1 h-full overflow-hidden">
-        <div className={`fixed bottom-2 space-y-2 z-50 left-[240px] ml-2`}>
-          <div className="flex space-x-2 items-end">
-            <Button className="uppercase relative overflow-hidden cursor-pointer">
-              <input
-                onChange={onImport}
-                className="opacity-0 inset-0 absolute"
-                type="file"
-              />
-              Import
-            </Button>
-
-            <ToOpenType selected={selected} />
-          </div>
-        </div>
-
-        <GlyphList font={font} glyphs={glyphs} selected={selected} />
+        {leftSidebar && (
+          <GlyphList font={font} glyphs={glyphs} selected={selected} />
+        )}
 
         {isReady && !!glyph && (
           <KeyboardEventsProvider className="flex-1 relative w-full focus:outline-none  overflow-hidden">
+            <div className="absolute left-10 bottom-4 z-50">
+              <ToOpenType selected={selected} />
+            </div>
+
             <div className="flex absolute left-10 top-10 z-50">
               <Button
                 roundedR={false}
@@ -361,27 +358,15 @@ const App: NextPage = () => {
             </div>
 
             <div className="absolute right-4 top-10 z-50 flex">
-              <Button roundedR={false} className="px-3 pr-2">
-                Download .SVG
-                <svg
-                  className="w-8 h-8 ml-2"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12 14.4L14.8 10.9H12.7V6H11.3V10.9H9.2L12 14.4Z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="M17.6 15.8H6.4V10.9H5V15.8C5 16.5721 5.6279 17.2 6.4 17.2H17.6C18.3721 17.2 19 16.5721 19 15.8V10.9H17.6V15.8Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </Button>
+              <DownloadSvgButton />
 
-              <Button roundedL={false} className="px-3 pr-2">
+              <Button roundedL={false} className="px-3 pr-2 relative">
                 Replace .SVG
+                <input
+                  onChange={onImport}
+                  className="opacity-0 inset-0 absolute w-full h-full cursor-pointer"
+                  type="file"
+                />
                 <svg
                   className="w-8 h-8 ml-2"
                   viewBox="0 0 24 24"
@@ -399,7 +384,10 @@ const App: NextPage = () => {
                 </svg>
               </Button>
 
-              <Button className="ml-4">
+              <Button
+                onClick={toggleRightSidebarSide}
+                className="ml-4"
+              >
                 <svg
                   className="w-8 h-8"
                   viewBox="0 0 24 24"
@@ -421,6 +409,8 @@ const App: NextPage = () => {
                 className="w-8"
                 active={settings.viewMode === "outline"}
                 roundedB={false}
+                onClick={() => setViewMode("outline")}
+                name="outline"
               >
                 <svg
                   className="w-6 h-6"
@@ -433,15 +423,16 @@ const App: NextPage = () => {
                     cy="8"
                     r="4"
                     transform="rotate(-90 8 8)"
-                    stroke="#4D7FEE"
+                    stroke="currentColor"
                     stroke-width="2"
                   />
                 </svg>
               </Button>
               <Button
                 className="w-8"
-                active={settings.viewMode === "outline"}
+                active={settings.viewMode === "solid"}
                 roundedT={false}
+                onClick={() => setViewMode("solid")}
               >
                 <svg
                   className="w-6 h-6"
@@ -454,7 +445,7 @@ const App: NextPage = () => {
                     cy="8"
                     r="4"
                     transform="rotate(-90 8 8)"
-                    fill="#4D7FEE"
+                    fill="currentColor"
                     stroke-width="2"
                   />
                 </svg>
@@ -474,105 +465,109 @@ const App: NextPage = () => {
           </KeyboardEventsProvider>
         )}
 
-        <div className="bg-white w-64 w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
-          <div>
-            <label className="text-sm uppercase text-gray-700">Grid size</label>
-            <input
-              onChange={(e) => {
-                const value = parseInt(e.target.value);
-                if (!isNaN(value)) {
+        {rightSidebar && (
+          <div className="bg-white w-64 w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
+            <div>
+              <label className="text-sm uppercase text-gray-700">
+                Grid size
+              </label>
+              <input
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!isNaN(value)) {
+                    setSettings((settings) => ({
+                      ...settings,
+                      gridSize: value,
+                    }));
+                  }
+                }}
+                className="p-1 text-sm rounded-md border border-gray-300"
+                value={settings.gridSize}
+                type="number"
+              />
+            </div>
+            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+              <input
+                className="mr-2"
+                onChange={(e) => {
                   setSettings((settings) => ({
                     ...settings,
-                    gridSize: value,
+                    snapToGrid: e.target.checked,
                   }));
-                }
-              }}
-              className="p-1 text-sm rounded-md border border-gray-300"
-              value={settings.gridSize}
-              type="number"
-            />
-          </div>
-          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-            <input
-              className="mr-2"
-              onChange={(e) => {
-                setSettings((settings) => ({
-                  ...settings,
-                  snapToGrid: e.target.checked,
-                }));
-              }}
-              type="checkbox"
-              checked={settings.snapToGrid}
-            />
-            <span className="-mt-0.5">Snap to grid</span>
-          </label>
-
-          <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-            <input
-              className="mr-2"
-              onChange={(e) => {
-                setSettings((settings) => ({
-                  ...settings,
-                  snapToOtherPoints: e.target.checked,
-                }));
-              }}
-              type="checkbox"
-              checked={settings.snapToOtherPoints}
-            />
-            <span className="-mt-0.5">Snap to other points</span>
-          </label>
-
-          <div>
-            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
-              Vector mirror
+                }}
+                type="checkbox"
+                checked={settings.snapToGrid}
+              />
+              <span className="-mt-0.5">Snap to grid</span>
             </label>
-            <select
-              className="p-1 text-sm rounded-md border border-gray-300"
-              value={settings.vectorMirrorType}
-              onChange={(e) => {
-                setSettings((settings) => ({
-                  ...settings,
-                  vectorMirrorType: e.target
-                    .value as Settings["vectorMirrorType"],
-                }));
-              }}
-            >
-              <option value="none">None</option>
-              <option value="angle">Angle</option>
-              <option value="angleLength">Angle and length</option>
-            </select>
-          </div>
 
-          {!!glyph && (
-            <GlyphInfo
-              onFitWidth={() => {
-                const bbox = computCommandsBounds(glyph.path.commands);
-                const font = getFont();
+            <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+              <input
+                className="mr-2"
+                onChange={(e) => {
+                  setSettings((settings) => ({
+                    ...settings,
+                    snapToOtherPoints: e.target.checked,
+                  }));
+                }}
+                type="checkbox"
+                checked={settings.snapToOtherPoints}
+              />
+              <span className="-mt-0.5">Snap to other points</span>
+            </label>
 
-                if (!font) {
-                  return;
-                }
+            <div>
+              <label className="text-sm uppercase text-gray-700 flex items-center cursor-pointer">
+                Vector mirror
+              </label>
+              <select
+                className="p-1 text-sm rounded-md border border-gray-300"
+                value={settings.vectorMirrorType}
+                onChange={(e) => {
+                  setSettings((settings) => ({
+                    ...settings,
+                    vectorMirrorType: e.target
+                      .value as Settings["vectorMirrorType"],
+                  }));
+                }}
+              >
+                <option value="none">None</option>
+                <option value="angle">Angle</option>
+                <option value="angleLength">Angle and length</option>
+              </select>
+            </div>
 
-                updateFont({
-                  ...font,
-                  glyphs: {
-                    ...font.glyphs,
-                    items: {
-                      ...font.glyphs.items,
-                      [selected]: {
-                        ...font.glyphs.items[selected],
-                        bbox,
-                        advanceWidth: bbox.width,
+            {!!glyph && (
+              <GlyphInfo
+                onFitWidth={() => {
+                  const bbox = computCommandsBounds(glyph.path.commands);
+                  const font = getFont();
+
+                  if (!font) {
+                    return;
+                  }
+
+                  updateFont({
+                    ...font,
+                    glyphs: {
+                      ...font.glyphs,
+                      items: {
+                        ...font.glyphs.items,
+                        [selected]: {
+                          ...font.glyphs.items[selected],
+                          bbox,
+                          advanceWidth: bbox.width,
+                        },
                       },
                     },
-                  },
-                });
-              }}
-              glyph={glyph}
-            />
-          )}
-          <FontInfo font={font} />
-        </div>
+                  });
+                }}
+                glyph={glyph}
+              />
+            )}
+            <FontInfo font={font} />
+          </div>
+        )}
 
         {/* <ImageTest /> */}
       </div>

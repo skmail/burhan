@@ -7,11 +7,32 @@ interface State {
   setReady: () => void;
   setKeyboardKeys: (keys: Record<string, boolean>) => void;
   resetKeyboardKeys: () => void;
+  leftSidebar: boolean;
+  toggleLeftSidebarSide: () => void;
+
+  rightSidebar: boolean;
+  toggleRightSidebarSide: () => void;
 }
 
 export const useWorkspaceStore = create<State>((set) => ({
   ready: false,
   keyboard: {},
+  
+  leftSidebar: false,
+  toggleLeftSidebarSide: () =>
+    set(
+      produce<State>((state) => {
+        state.leftSidebar = !state.leftSidebar;
+      })
+    ),
+
+  rightSidebar: false,
+  toggleRightSidebarSide: () =>
+    set(
+      produce<State>((state) => {
+        state.rightSidebar = !state.rightSidebar;
+      })
+    ),
 
   setReady: () =>
     set(

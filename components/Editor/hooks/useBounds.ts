@@ -1,4 +1,5 @@
 import { RefObject, useEffect, useState } from "react";
+import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import { Bounds } from "../../../types";
 
 export default function useBounnds(workspaceRef: RefObject<HTMLDivElement>) {
@@ -8,6 +9,9 @@ export default function useBounnds(workspaceRef: RefObject<HTMLDivElement>) {
     x: 0,
     y: 0,
   });
+
+  const leftSidebar = useWorkspaceStore((state) => state.leftSidebar);
+  const rightSidebar = useWorkspaceStore((state) => state.rightSidebar);
 
   useEffect(() => {
     if (!workspaceRef.current || !workspaceRef.current.parentElement) {
@@ -34,7 +38,7 @@ export default function useBounnds(workspaceRef: RefObject<HTMLDivElement>) {
     return () => {
       window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [leftSidebar, rightSidebar]);
 
   return bounds;
 }

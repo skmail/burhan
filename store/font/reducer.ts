@@ -9,11 +9,22 @@ interface State {
   setSelectedGlyph: (id: string) => void;
   updateCommands: (commands: Record<string, Command>) => void;
   replaceCommands: (table: Table<Command>) => void;
+  downloadUrl?: string;
+  setDownloadUrl: (url: string) => void;
+  nextGlyph: () => void;
+  previousGlyph: () => void;
 }
 
 export const useFontStore = create<State>((set) => ({
   font: undefined,
   selectedGlyphId: "",
+  downloadUrl: undefined,
+  setDownloadUrl: (url: string) =>
+    set(
+      produce<State>((state) => {
+        state.downloadUrl = url;
+      })
+    ),
 
   setFont: (font) =>
     set(
@@ -21,6 +32,7 @@ export const useFontStore = create<State>((set) => ({
         state.font = font;
       })
     ),
+
   setSelectedGlyph: (id: string) =>
     set(
       produce<State>((state) => {
@@ -77,6 +89,41 @@ export const useFontStore = create<State>((set) => ({
             },
           },
         };
+      })
+    ),
+
+  nextGlyph: () =>
+    set(
+      produce<State>((state) => {
+        if (!state.font || !state.selectedGlyphId) {
+          return;
+        }
+        let index = state.font.glyphs.ids.indexOf(state.selectedGlyphId);
+
+        if (index === state.font.glyphs.ids.length - 1) {
+          index = 0;
+        } else {
+          index++;
+        }
+
+        state.selectedGlyphId = state.font.glyphs.ids[index];
+      })
+    ),
+  previousGlyph: () =>
+    set(
+      produce<State>((state) => {
+        if (!state.font || !state.selectedGlyphId) {
+          return;
+        }
+        let index = state.font.glyphs.ids.indexOf(state.selectedGlyphId);
+
+        if (index === 0) {
+          index = state.font.glyphs.ids.length - 1;
+        } else {
+          index--;
+        }
+
+        state.selectedGlyphId = state.font.glyphs.ids[index];
       })
     ),
 }));

@@ -159,7 +159,6 @@ function Editor({
     },
     [selectedHandles, keys.ShiftLeft]
   );
-
   useDeletePoints();
 
   const { onDrag, onDragEnd, isDragging, setIsDragging } = useHandleDrag({
@@ -234,44 +233,81 @@ function Editor({
     shallowEqual
   );
 
+  const shouldResetZoom = zoom != 1 || pan[0] != 0 || pan[1] != 0;
+
   return (
     <div
-      className="bg-bg-1 relative"
+      className="bg-bg-1 relative transition-all"
       style={{
         width: bounds.width,
         height: bounds.height,
       }}
       ref={ref}
     >
-      <div className="absolute bottom-2 right-2 flex flex-col z-50 space-y-2 items-end">
-        <div className="text-xs w-full py-1 px-2 bg-black bg-opacity-90 text-white rounded-md">
+      <div className="absolute bottom-2 right-2 flex flex-col z-50  items-end">
+        <div className="absolute right-full bottom-0 text-xs mr-2 py-1 px-1 bg-black bg-opacity-80 text-white rounded-md">
           {Math.round(zoom * 100)}%
         </div>
 
-        {(zoom != 1 || pan[0] != 0 || pan[1] != 0) && (
+        {shouldResetZoom && (
           <Button
             onClick={() => {
               setPan([0, 0]);
               resetZoom();
             }}
+            roundedB={false}
           >
             <svg
+              className="w-7"
               viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-5 h-5"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M18 12h2V4h-8v2h6v6ZM4 20h8v-2H6v-6H4v8Z" />
-              <path d="M22 24H2a2.002 2.002 0 0 1-2-2V2a2.002 2.002 0 0 1 2-2h20a2.002 2.002 0 0 1 2 2v20a2.002 2.002 0 0 1-2 2ZM2 2v20h20.001L22 2H2Z" />
+              <path
+                d="M6.55556 12H5V19H12V17.4444H6.55556V12ZM12 6.55556H17.4444V12H19V5H12V6.55556Z"
+                fill="#707C88"
+              />
             </svg>
           </Button>
         )}
-        <Button onClick={() => updateZoom(0.1)}>
-          <PlusIcon className="w-5 h-5" />
+        <Button
+          roundedB={false}
+          roundedT={!shouldResetZoom}
+          onClick={() => updateZoom(0.1)}
+        >
+          <svg
+            className="w-7 h-7"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M11.7354 7.99353H10.2387V10.2387H7.99353V11.7354H10.2387V13.9806H11.7354V11.7354H13.9806V10.2387H11.7354V7.99353Z"
+              fill="#707C88"
+            />
+            <path
+              d="M10.9871 5C7.68595 5 5 7.68595 5 10.9871C5 14.2882 7.68595 16.9741 10.9871 16.9741C12.3154 16.9739 13.6055 16.5292 14.6519 15.7109L17.9418 19.0007L19 17.9425L15.7101 14.6526C16.5288 13.6062 16.9738 12.3158 16.9741 10.9871C16.9741 7.68595 14.2882 5 10.9871 5ZM10.9871 15.4774C8.51066 15.4774 6.49677 13.4635 6.49677 10.9871C6.49677 8.51066 8.51066 6.49677 10.9871 6.49677C13.4635 6.49677 15.4774 8.51066 15.4774 10.9871C15.4774 13.4635 13.4635 15.4774 10.9871 15.4774Z"
+              fill="#707C88"
+            />
+          </svg>
         </Button>
 
-        <Button onClick={() => updateZoom(-0.1)}>
-          <MinusIcon className="w-5 h-5" />
+        <Button roundedT={false} onClick={() => updateZoom(-0.1)}>
+          <svg
+            className="w-7 h-7"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M7.99353 10.2387H13.9806V11.7355H7.99353V10.2387Z"
+              fill="#707C88"
+            />
+            <path
+              d="M10.9871 16.9741C12.3154 16.9739 13.6055 16.5292 14.6519 15.7109L17.9418 19.0007L19 17.9425L15.7101 14.6526C16.5288 13.6062 16.9738 12.3158 16.9741 10.9871C16.9741 7.68595 14.2882 5 10.9871 5C7.68595 5 5 7.68595 5 10.9871C5 14.2882 7.68595 16.9741 10.9871 16.9741ZM10.9871 6.49677C13.4635 6.49677 15.4774 8.51066 15.4774 10.9871C15.4774 13.4635 13.4635 15.4774 10.9871 15.4774C8.51066 15.4774 6.49677 13.4635 6.49677 10.9871C6.49677 8.51066 8.51066 6.49677 10.9871 6.49677Z"
+              fill="#707C88"
+            />
+          </svg>
         </Button>
       </div>
       <PanningArea
@@ -450,7 +486,15 @@ function Editor({
             zoom={scale}
             direction="vertical"
           />
-          <Rect width={27} height={27} x={-2} y={-2} fill="#F3F5F7" stroke={"#C4CBD7"} strokeWidth={2} />
+          <Rect
+            width={27}
+            height={27}
+            x={-2}
+            y={-2}
+            fill="#F3F5F7"
+            stroke={"#C4CBD7"}
+            strokeWidth={2}
+          />
         </Layer>
       </Stage>
     </div>

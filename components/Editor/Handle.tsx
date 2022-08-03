@@ -224,13 +224,7 @@ export default function Handle({
   return (
     <>
       {lines.map((line, index) => (
-        <Line
-          key={index}
-          points={line}
-          strokeWidth={1}
-          stroke={"#3b82f6"}
-          dash={states.isHovered || isDragging ? undefined : [4, 4]}
-        />
+        <Line key={index} points={line} strokeWidth={1} stroke={"#C4CBD7"} />
       ))}
       {!isControlPoint && <Circle {...props} radius={4} />}
       {isControlPoint && (

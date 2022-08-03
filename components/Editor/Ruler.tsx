@@ -20,11 +20,11 @@ export default function HorizontalRuler({
   if (unit < 5) {
     unit = 1;
   } else if (unit < 10) {
-    unit = 2;
-  } else if (unit < 25) {
-    unit = 15;
+    unit = 5;
+  } else if (unit < 30) {
+    unit = 10;
   } else if (unit < 50) {
-    unit = 25;
+    unit = 20;
   } else if (unit < 100) {
     unit = 50;
   } else if (unit < 300) {
@@ -38,9 +38,11 @@ export default function HorizontalRuler({
   } else {
     unit = 10000;
   }
-  // zoom = zo;
+
   const zoomUnit = unit * zoom;
 
+  const opacity = Math.ceil(zoom) - zoom;
+  console.log(opacity);
   // console.log(Math.round(50 * width / 100000 ) * 100000    )
 
   const minRange = Math.floor((-scrollPosition * zoom) / zoomUnit);
@@ -122,7 +124,6 @@ export default function HorizontalRuler({
         height={direction === "horizontal" ? 0 : size}
         x={direction === "horizontal" ? 0 : barSize}
         y={direction === "horizontal" ? barSize : 0}
-
         fill="#F3F5F7"
         stroke={"#C4CBD7"}
         strokeWidth={2}
@@ -145,15 +146,17 @@ const RulerNode = ({
   x,
   y,
   label,
+  opacity = 1,
 }: {
   direction: RulerDirection;
   x: number;
   y: number;
+  opacity?: number;
   label: string;
 }) => {
   const [labelCenter, setLabelCenter] = useState(10);
   return (
-    <>
+    <Group opacity={opacity}>
       <Rect
         x={direction === "horizontal" ? x : 20}
         y={direction === "horizontal" ? 20 : y}
@@ -173,6 +176,6 @@ const RulerNode = ({
           setLabelCenter(node?.getTextWidth() / 2);
         }}
       />
-    </>
+    </Group>
   );
 };
