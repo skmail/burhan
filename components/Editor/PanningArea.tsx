@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useKeyboard } from "../../context/KeyboardEventsProvider";
+import { useEffect, useRef } from "react";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 import onLeftButton from "../../utils/onLeftButton";
 
 interface Props {
@@ -7,8 +7,7 @@ interface Props {
 }
 export default function PanningArea({ onPan }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const { keys } = useKeyboard();
-  const isPanning = keys["Space"] === true;
+  const isPanning = useWorkspaceStore((state) => state.keyboard.Space === true);
 
   useEffect(() => {
     if (!ref.current || !isPanning) {

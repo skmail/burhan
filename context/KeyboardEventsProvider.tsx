@@ -1,10 +1,5 @@
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "../hooks/store";
-import {
-  resetKeyboardKeys,
-  selectKeyboard,
-  setKeyboardKeys,
-} from "../store/workspace/reducer";
+import { useWorkspaceStore } from "../store/workspace/reducer";
 
 export default function KeyboardEventsProvider({
   children,
@@ -13,31 +8,31 @@ export default function KeyboardEventsProvider({
   const ref = useRef<HTMLDivElement>(null);
 
   const [needFocusOnMouseEnter, setNeedFocusOnMouseEnter] = useState(true);
-  const dispatch = useAppDispatch();
 
+  const keyboard = useWorkspaceStore((state) => ({
+    setKeyboardKeys: state.setKeyboardKeys,
+    resetKeyboardKeys: state.resetKeyboardKeys,
+  }));
+  
   useEffect(() => {
     if (!ref.current) {
       return;
     }
     const element = ref.current;
     const onKeyDown = (e: KeyboardEvent) => {
-      dispatch(
-        setKeyboardKeys({
-          [e.code]: true,
-        })
-      );
+      keyboard.setKeyboardKeys({
+        [e.code]: true,
+      });
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
-      dispatch(
-        setKeyboardKeys({
-          [e.code]: false,
-        })
-      );
+      keyboard.setKeyboardKeys({
+        [e.code]: false,
+      });
     };
 
     const onBlur = () => {
-      dispatch(resetKeyboardKeys());
+      keyboard.resetKeyboardKeys();
       setNeedFocusOnMouseEnter(true);
     };
 
@@ -77,9 +72,3 @@ export default function KeyboardEventsProvider({
     </div>
   );
 }
-
-export const useKeyboard = () => {
-  return {
-    keys: useAppSelector(selectKeyboard),
-  };
-};

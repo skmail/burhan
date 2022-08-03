@@ -1,87 +1,96 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "..";
 import { Command, Font, Table } from "../../types";
+import create from "zustand";
+import produce from "immer";
+
 interface State {
   font?: Font;
-  selectedGlyph?: string;
+  selectedGlyphId: string;
+  setFont: (font: Font) => void;
+  setSelectedGlyph: (id: string) => void;
+  updateCommands: (commands: Record<string, Command>) => void;
+  replaceCommands: (table: Table<Command>) => void;
 }
-const initialState: State = {
+
+export const useFontStore = create<State>((set) => ({
   font: undefined,
-  selectedGlyph: undefined,
-};
+  selectedGlyphId: "",
 
-const slice = createSlice({
-  name: "font",
-  initialState,
-  reducers: {
-    setFont(state, action: PayloadAction<Font>) {
-      state.font = action.payload;
-    },
+  setFont: (font) =>
+    set(
+      produce<State>((state) => {
+        state.font = font;
+      })
+    ),
+  setSelectedGlyph: (id: string) =>
+    set(
+      produce<State>((state) => {
+        return {
+          ...state,
+          selectedGlyphId: id,
+        };
+      })
+    ),
 
-    setSelectedGlyph(state, action: PayloadAction<string>) {
-      state.selectedGlyph = action.payload;
-    },
-    updateCommands(state, action: PayloadAction<Record<string, Command>>) {
-      if (!state.font || !state.selectedGlyph) {
-        return state;
-      }
-      state.font.glyphs.items[state.selectedGlyph].path.commands.items = {
-        ...state.font.glyphs.items[state.selectedGlyph].path.commands.items,
-        ...action.payload,
-      };
-    },
-    replaceCommands(state, action: PayloadAction<Table<Command>>) {
-      const selected = String(state.selectedGlyph);
-      if (!state.font || !selected) {
-        return;
-      }
+  updateCommands: (commands: Record<string, Command>) =>
+    set(
+      produce<State>((state) => {
+        if (!state.font || !state.selectedGlyphId) {
+          return state;
+        }
+        state.font.glyphs.items[state.selectedGlyphId].path.commands.items = {
+          ...state.font.glyphs.items[state.selectedGlyphId].path.commands.items,
+          ...commands,
+        };
+      })
+    ),
+  replaceCommands: (table: Table<Command>) =>
+    set(
+      produce<State>((state) => {
+        const selected = String(state.selectedGlyphId);
+        if (!state.font || !selected) {
+          return;
+        }
 
-      return {
-        ...state,
-        font: {
-          ...state.font,
-          glyphs: {
-            ...state.font.glyphs,
-            items: {
-              ...state.font.glyphs.items,
-              [selected]: {
-                ...state.font.glyphs.items[selected],
-                path: {
-                  ...state.font.glyphs.items[selected].path,
-                  commands: {
-                    ids: [],
-                    items: {
-                      ...state.font.glyphs.items[selected].path.commands.items,
-                      ...action.payload.items,
+        return {
+          ...state,
+          font: {
+            ...state.font,
+            glyphs: {
+              ...state.font.glyphs,
+              items: {
+                ...state.font.glyphs.items,
+                [selected]: {
+                  ...state.font.glyphs.items[selected],
+                  path: {
+                    ...state.font.glyphs.items[selected].path,
+                    commands: {
+                      ids: table.ids,
+                      items: {
+                        ...state.font.glyphs.items[selected].path.commands
+                          .items,
+                        ...table.items,
+                      },
                     },
                   },
                 },
               },
             },
           },
-        },
-      };
-    },
-  },
-});
+        };
+      })
+    ),
+}));
 
-export const { setFont, setSelectedGlyph, updateCommands, replaceCommands } =
-  slice.actions;
+export const selectCommand =
+  (id: string) =>
+  (state: State): Command => {
+    // @ts-ignore
+    return state.font?.glyphs.items[state.selectedGlyphId].path.commands.items[
+      id
+    ];
+  };
 
-export const selectSelectedGlyphId = (state: RootState): string => {
-  return String(state.font.selectedGlyph);
-};
-
-export const selectCommand = (state: RootState, id: string): Command => {
+export const selectCommandsTable = (state: State): Table<Command> => {
   // @ts-ignore
-  return state.font.font?.glyphs.items[selectSelectedGlyphId(state)].path
-    .commands.items[id];
+  return state.font.glyphs.items[state.selectedGlyphId].path.commands;
 };
-
-export const selectCommandsTable = (state: RootState): Table<Command> => {
-  // @ts-ignore
-  return state.font.font?.glyphs.items[selectSelectedGlyphId(state)].path
-    .commands;
-};
-
-export default slice.reducer;

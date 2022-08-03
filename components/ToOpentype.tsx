@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import useFresh from "../hooks/useFresh";
+import { useFontStore } from "../store/font/reducer";
 import { Font } from "../types";
 import toOpentype from "../utils/toOpentype";
 import { FontGeneratorWorker } from "../workers/font-generator";
 import Button from "./Button";
 
-export default function ToOpenType({
-  font,
-  selected,
-}: {
-  font: Font;
-  selected: string;
-}) {
+export default function ToOpenType({ selected }: { selected: string }) {
   const [testData, setTestData] = useState<string>();
   const [isChanged, setIsChanged] = useState(false);
   const [fontUrl, setFontUrl] = useState("");
   const [isLoding, setIsLoading] = useState(false);
-
+  const font = useFontStore((state) => state.font);
   const worker = useRef<FontGeneratorWorker>();
 
   useEffect(() => {
@@ -35,7 +30,11 @@ export default function ToOpenType({
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => { 
+    if (!font) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsLoading(true);
       worker.current?.run(font);
     }, 800);
 
@@ -47,11 +46,17 @@ export default function ToOpenType({
   const [getIsChanged] = useFresh(isChanged);
 
   useEffect(() => {
+    if (!font) {
+      return;
+    }
     if (font.glyphs.items[selected] && (!getIsChanged() || !testData)) {
       setTestData(font.glyphs.items[selected].string);
     }
   }, [selected, font, testData]);
 
+  if (!font) {
+    return null;
+  }
   return (
     <>
       <Button

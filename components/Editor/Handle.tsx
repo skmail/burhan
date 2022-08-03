@@ -1,15 +1,16 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Circle, Line, KonvaNodeEvents, Text, Group, Rect } from "react-konva";
-import { useAppDispatch, useAppSelector } from "../../hooks/store";
-import { shallowEqual } from "react-redux";
 import useFresh from "../../hooks/useFresh";
-import { selectCommand, selectCommandsTable } from "../../store/font/reducer";
-import { OnHandleDrag, PointTuple, Vector } from "../../types";
+import {
+  selectCommand,
+  selectCommandsTable,
+  useFontStore,
+} from "../../store/font/reducer";
+import { OnHandleDrag, Vector } from "../../types";
 import vector2 from "../../utils/vector";
 import toScreenPoint from "../../utils/toScreenPoint";
-import { useKeyboard } from "../../context/KeyboardEventsProvider";
 import useFreshSelector from "../../hooks/useFreshSelector";
-import { selectKeyboard } from "../../store/workspace/reducer";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 import useCommandStore from "../../store/commands/reducer";
 import shallow from "zustand/shallow";
 
@@ -44,11 +45,9 @@ export default function Handle({
     shallow
   );
 
+  const handle = useFontStore(selectCommand(id), shallow);
+
   const [getStates] = useFresh(states);
-
-  const dispatch = useAppDispatch();
-
-  const handle = useAppSelector((state) => selectCommand(state, id));
 
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingStarted, setIsDraggingStarted] = useState(false);
@@ -57,7 +56,10 @@ export default function Handle({
   const [getIsDragging] = useFresh(isDragging);
   const startPosition = useRef<Vector>(vector2());
 
-  const getKeys = useFreshSelector(selectKeyboard);
+  const getKeys = useFreshSelector(
+    useWorkspaceStore,
+    (state) => state.keyboard
+  );
 
   const onMouseDown = useCallback(
     (e: any) => {
@@ -71,14 +73,14 @@ export default function Handle({
       startPosition.current.y = e.evt.clientY;
       const states = getStates();
 
-      states.activate(handle.id);
+      states.activate(id);
       if (getKeys().ShiftLeft) {
-        states.toggleSelected(handle.id);
+        states.toggleSelected(id);
       } else if (!states.isSelected) {
-        states.select(handle.id);
+        states.select(id);
       }
     },
-    [handle.id]
+    [id]
   );
 
   useEffect(() => {
@@ -104,10 +106,10 @@ export default function Handle({
     };
     const onUp = () => {
       if (!getKeys().ShiftLeft && !getIsDraggingStarted()) {
-        states.select(handle.id);
+        states.select(id);
       }
 
-      states.deactivate(handle.id);
+      states.deactivate(id);
       onDragEnd();
 
       setIsDragging(false);
@@ -130,9 +132,9 @@ export default function Handle({
         return;
       }
       document.body.style.cursor = "pointer";
-      states.hover(handle.id);
+      states.hover(id);
     },
-    [handle.id]
+    [id]
   );
 
   const onMouseLeave = useCallback(
@@ -151,38 +153,20 @@ export default function Handle({
 
       states.hover();
     },
-    [handle.id]
+    [id]
   );
 
-  const props = {
-    // @ts-ignore
-    stroke: states.isSelected
-      ? "white"
-      : states.isHovered
-      ? "#3b82f6"
-      : handle.command === "moveTo"
-      ? "red"
-      : "#9ca3af",
-    strokeWidth: states.isHovered ? 2 : 1,
-    x: x + handle.args[0] * scale,
-    y: baseline - handle.args[1] * scale,
-    fill: states.isSelected ? "#3b82f6" : "white",
+  const lines = useFontStore((state) => {
+    if (!handle) {
+      return [];
+    }
 
-    onMouseDown,
-    onMouseEnter,
-    onMouseLeave,
-  };
-
-  const isControlPoint = ["bezierCurveToCP1", "bezierCurveToCP2"].includes(
-    handle.command
-  );
-
-  const lines = useAppSelector((state) => {
     const commands = selectCommandsTable(state);
+
     if (!handle.args.length) {
       return [];
     }
-    const index = commands.ids.indexOf(handle.id);
+    const index = commands.ids.indexOf(id);
 
     const lines = [];
     if (handle.command === "bezierCurveToCP1") {
@@ -206,8 +190,34 @@ export default function Handle({
     }
 
     return lines;
-  });
+  }, shallow);
 
+  // stale pro & zombie component
+  if (!handle) {
+    return null;
+  }
+  const isControlPoint = ["bezierCurveToCP1", "bezierCurveToCP2"].includes(
+    handle.command
+  );
+
+  const props = {
+    // @ts-ignore
+    stroke: states.isSelected
+      ? "white"
+      : states.isHovered
+      ? "#3b82f6"
+      : handle.command === "moveTo"
+      ? "red"
+      : "#9ca3af",
+    strokeWidth: states.isHovered ? 2 : 1,
+    x: x + handle.args[0] * scale,
+    y: baseline - handle.args[1] * scale,
+    fill: states.isSelected ? "#3b82f6" : "white",
+
+    onMouseDown,
+    onMouseEnter,
+    onMouseLeave,
+  };
   if (!handle.args.length) {
     return null;
   }

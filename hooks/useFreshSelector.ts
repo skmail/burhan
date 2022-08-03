@@ -3,11 +3,12 @@ import { useAppSelector } from "./store";
 import useFresh from "./useFresh";
 
 export default function useFreshSelector<T>(
+  useStore: any,
   callback: (state: RootState) => T
 ): () => T {
   const [getter, setter] = useFresh<T>();
 
-  useAppSelector((state) => {
+  useStore((state: any) => {
     setter(callback(state));
   });
 

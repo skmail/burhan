@@ -1,13 +1,13 @@
 import { RefObject, useEffect, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "../../hooks/store";
-import useFresh from "../../hooks/useFresh";
+
 import useFreshSelector from "../../hooks/useFreshSelector";
 import useCommandStore from "../../store/commands/reducer";
-import { selectCommandsTable } from "../../store/font/reducer";
-import { Bounds, Command, Table } from "../../types";
+import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
+import { Bounds } from "../../types";
 import onLeftButton from "../../utils/onLeftButton";
 import scaleX from "../../utils/scaleX";
 import scaleY from "../../utils/scaleY";
+
 import vector from "../../utils/vector";
 
 interface Props {
@@ -29,9 +29,7 @@ export default function SelectionArea({
     height: 0,
   });
 
-  const getCommands = useFreshSelector(selectCommandsTable);
-
-  const dispatch = useAppDispatch();
+  const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
 
   const select = useCommandStore((state) => state.select);
 

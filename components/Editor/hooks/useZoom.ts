@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function useZoom({ workspaceRef, setPan, pan }: Props) {
-  const [zoom, setZoom] = useState(0.9);
+  const [zoom, setZoom] = useState(1);
   useEffect(() => {
     if (!workspaceRef.current || !workspaceRef.current.parentElement) {
       return;
@@ -43,12 +43,12 @@ export default function useZoom({ workspaceRef, setPan, pan }: Props) {
   }, []);
 
   const updateZoom = (value: number) => {
-    setZoom((zoom) => Math.min(50, Math.max(zoom + value, 0.1)));
+    setZoom((zoom) => Math.min(100, Math.max(zoom + value, 0.1)));
   };
 
   return {
     zoom,
     updateZoom,
-    reset: () => setZoom(0.9),
+    reset: () => setZoom(1),
   };
 }

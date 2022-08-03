@@ -1,7 +1,9 @@
 import { Bezier } from "bezier-js";
 import { useCallback, useEffect, useState } from "react";
+import shallow from "zustand/shallow";
 import { useKeyboard } from "../../../context/KeyboardEventsProvider";
 import useFresh from "../../../hooks/useFresh";
+import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import {
   Command,
   Font,
@@ -81,7 +83,7 @@ export default function useHighlightNewPoint({
   const [newPoint, setNewPoint] = useState<NewPoint>();
 
   const resetNewPoint = useCallback(() => setNewPoint(undefined), []);
-  const { keys } = useKeyboard();
+  const keys = useWorkspaceStore((state) => state.keyboard, shallow);
 
   const [getProps] = useFresh({
     x,

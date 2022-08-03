@@ -5,10 +5,7 @@ import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
 import useCommandStore from "../../../store/commands/reducer";
 
-import {
-  selectCommandsTable,
-  updateCommands,
-} from "../../../store/font/reducer";
+import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
 import {
   Settings,
   OnHandleDrag,
@@ -44,12 +41,13 @@ export default function useHandleDrag({
 
   history,
 }: Props) {
-  const dispatch = useAppDispatch();
   const [getScaleWithoutZoom] = useFresh(scaleWithoutZoom);
   const [getScale] = useFresh(scale);
   const [getSettings] = useFresh(settings);
 
-  const getFreshCommands = useFreshSelector(selectCommandsTable);
+  const getFreshCommands = useFreshSelector(useFontStore, selectCommandsTable);
+  const updateCommands = useFontStore((state) => state.updateCommands);
+
   const selections = useCommandStore((state) => state.selected, shallow);
   const [getSelectedHandleIds] = useFresh(selections);
 
@@ -244,7 +242,7 @@ export default function useHandleDrag({
       return acc;
     }, {} as Record<string, Command>);
 
-    dispatch(updateCommands(newHandles));
+    updateCommands(newHandles);
 
     pendingDragHistory.current = {
       type: "commands.update",

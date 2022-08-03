@@ -1,13 +1,9 @@
 import { configureStore, getDefaultMiddleware } from "@reduxjs/toolkit";
-import font from "./font";
+
 import workspace from "./workspace";
 
 export const store = configureStore({
-  reducer: {
-    font: font.reducer,
-
-    workspace: workspace.reducer,
-  },
+  reducer: {},
   middleware: [],
 });
 

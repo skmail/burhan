@@ -2,24 +2,20 @@ import { shallowCopy } from "immer/dist/internal";
 import { useEffect } from "react";
 import { shallowEqual } from "react-redux";
 import shallow from "zustand/shallow";
-import { useAppDispatch, useAppSelector } from "../../../hooks/store";
+
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
 import useCommandStore from "../../../store/commands/reducer";
 
-import {
-  replaceCommands,
-  selectCommandsTable,
-} from "../../../store/font/reducer";
-import { selectKeyboard } from "../../../store/workspace/reducer";
+import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
+import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import { Command } from "../../../types";
-
+ 
 export default function useDeletePoints() {
-  const { Backspace, Delete } = useAppSelector((state) => {
-    const { Backspace, Delete } = selectKeyboard(state);
+  const { Backspace, Delete } = useWorkspaceStore((state) => {
     return {
-      Backspace,
-      Delete,
+      Backspace: state.keyboard.Backspace,
+      Delete: state.keyboard.Backspace,
     };
   }, shallowEqual);
 
@@ -28,8 +24,9 @@ export default function useDeletePoints() {
 
   const [getSelections] = useFresh(selections);
 
-  const getCommands = useFreshSelector(selectCommandsTable);
-  const dispatch = useAppDispatch();
+  const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
+
+  const replaceCommands = useFontStore((state) => state.replaceCommands);
 
   useEffect(() => {
     if (!Backspace && !Delete) {
@@ -115,11 +112,9 @@ export default function useDeletePoints() {
 
     select([]);
 
-    dispatch(
-      replaceCommands({
-        ids,
-        items,
-      })
-    );
+    replaceCommands({
+      ids,
+      items,
+    });
   }, [Backspace, Delete]);
 }

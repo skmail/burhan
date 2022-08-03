@@ -20,18 +20,28 @@ import computCommandsBounds from "../../utils/computCommandsBounds";
 import GlyphList from "../../components/GlyphList";
 import loadFont from "../../api/loadFont";
 import { saveFont } from "../../db/database";
-import useFontSelector from "../../utils/useFontSelector";
-import { useAppDispatch, useAppSelector } from "../../hooks/store";
-import {
-  selectSelectedGlyphId,
-  setFont,
-  setSelectedGlyph,
-} from "../../store/font/reducer";
-import { selectWorkspace, setReady } from "../../store/workspace/reducer";
+
+import { useFontStore } from "../../store/font/reducer";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
+import shallow from "zustand/shallow";
+import useFreshSelector from "../../hooks/useFreshSelector";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
   const router = useRouter();
+
+  const fontState = useFontStore(
+    (state) => ({
+      setSelectedGlyph: state.setSelectedGlyph,
+      setFont: state.setFont,
+      selectedGlyphId: state.selectedGlyphId,
+    }),
+    shallow
+  );
+
+  useEffect(() => {
+    console.log("font state updated");
+  }, [fontState]);
 
   const fontId = `${router.query.id}`;
 
@@ -41,14 +51,19 @@ const App: NextPage = () => {
     retry: 0,
   });
 
-  const dispatch = useAppDispatch();
-  const isReady = useAppSelector((state) => selectWorkspace(state).ready);
+  const { isReady, setReady } = useWorkspaceStore(
+    (state) => ({
+      isReady: state.ready,
+      setReady: state.setReady,
+    }),
+    shallow
+  );
 
   useEffect(() => {
     if (query.data) {
-      dispatch(setFont(query.data));
+      fontState.setFont(query.data);
 
-      dispatch(setReady());
+      setReady();
     }
   }, [query.data]);
 
@@ -67,7 +82,7 @@ const App: NextPage = () => {
     // saveFont(font);
   };
 
-  const selected = useAppSelector(selectSelectedGlyphId);
+  const selected = fontState.selectedGlyphId;
 
   const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
 
@@ -84,7 +99,7 @@ const App: NextPage = () => {
     }
   });
 
-  const getFont = useFontSelector(fontId);
+  const getFont = useFreshSelector(useFontStore, (state) => state.font);
 
   const [getSelected] = useFresh(selected);
 
@@ -114,13 +129,13 @@ const App: NextPage = () => {
 
     const queryGlyph = String(router.query.glyph);
     if (router.query.glyph && font.glyphs.ids.includes(queryGlyph)) {
-      dispatch(setSelectedGlyph(queryGlyph));
+      fontState.setSelectedGlyph(queryGlyph);
       return;
     }
     const id = font.glyphs.ids[Math.floor(font.glyphs.ids.length / 4)];
 
     if (id) {
-      dispatch(setSelectedGlyph(id));
+      fontState.setSelectedGlyph(id);
     }
   }, [query.isLoading, query.isSuccess, router.query.glyph]);
 
@@ -133,8 +148,6 @@ const App: NextPage = () => {
         return;
       }
 
-
-    
       updateFont({
         ...font,
         glyphs: {
@@ -287,7 +300,6 @@ const App: NextPage = () => {
 
   return (
     <div className="h-screen flex  overflow-hidden">
-      
       <div className={`fixed bottom-2 space-y-2 z-50 left-[240px] ml-2`}>
         <div className="flex space-x-2 items-end">
           <Button onClick={history.undo} disabled={!history.canUndo}>
@@ -333,6 +345,7 @@ const App: NextPage = () => {
       {isReady && !!glyph && (
         <KeyboardEventsProvider className="flex-1  w-full  overflow-hidden">
           <Editor
+            key={fontState.selectedGlyphId}
             history={history}
             settings={settings}
             onCommandsAdd={onCommandsAdd}

@@ -1,37 +1,39 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "..";
+import create from "zustand";
+import produce from "immer";
 
 interface State {
   ready: boolean;
   keyboard: Record<string, boolean>;
+  setReady: () => void;
+  setKeyboardKeys: (keys: Record<string, boolean>) => void;
+  resetKeyboardKeys: () => void;
 }
-const initialState: State = {
+
+export const useWorkspaceStore = create<State>((set) => ({
   ready: false,
   keyboard: {},
-};
 
-const slice = createSlice({
-  name: "workspace",
-  initialState,
-  reducers: {
-    setReady(state) {
-      state.ready = true;
-    },
-    setKeyboardKeys(state, action: PayloadAction<{ [key: string]: boolean }>) {
-      state.keyboard = {
-        ...state.keyboard,
-        ...action.payload,
-      };
-    },
-    resetKeyboardKeys(state) {
-      state.keyboard = {};
-    },
-  },
-});
+  setReady: () =>
+    set(
+      produce<State>((state) => {
+        state.ready = true;
+      })
+    ),
 
-export const { setReady, setKeyboardKeys, resetKeyboardKeys } = slice.actions;
+  setKeyboardKeys: (keys: Record<string, boolean>) =>
+    set(
+      produce<State>((state) => {
+        state.keyboard = {
+          ...state.keyboard,
+          ...keys,
+        };
+      })
+    ),
 
-export const selectWorkspace = (state: RootState): State => state.workspace;
-export const selectKeyboard = (state: RootState) => state.workspace.keyboard;
-
-export default slice.reducer;
+  resetKeyboardKeys: () =>
+    set(
+      produce<State>((state) => {
+        state.keyboard = {};
+      })
+    ),
+}));

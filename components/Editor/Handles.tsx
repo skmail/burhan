@@ -1,8 +1,8 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { shallowEqual } from "react-redux";
 import { useAppSelector } from "../../hooks/store";
-import { selectCommandsTable } from "../../store/font/reducer";
-import { Command, OnHandleActivate, OnHandleDrag } from "../../types";
+import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
+import { OnHandleDrag } from "../../types";
 import Handle from "./Handle";
 
 interface Props {
@@ -13,7 +13,8 @@ interface Props {
   scale: number;
   ids: string[];
 }
-function Handles({ baseline, x, scale, onDrag, onDragEnd, ids }: Props) {
+function Handles({ baseline, x, scale, onDrag, onDragEnd }: Props) {
+  const ids = useFontStore((state) => selectCommandsTable(state).ids);
   return (
     <>
       {ids.map((id) => (

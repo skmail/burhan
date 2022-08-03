@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import shallow from "zustand/shallow";
-import { useKeyboard } from "../../../context/KeyboardEventsProvider";
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
 import useCommandStore from "../../../store/commands/reducer";
-import { selectCommandsTable } from "../../../store/font/reducer";
+import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
+import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import { OnHandleDrag, PointTuple, Settings } from "../../../types";
 
 interface Props {
@@ -19,10 +19,20 @@ export default function useKeyboardMove({
   onDrag,
   onDragEnd,
 }: Props) {
-  const { keys } = useKeyboard();
+  const keys = useWorkspaceStore(
+    (state) => ({
+      ArrowUp: state.keyboard.ArrowUp,
+      ArrowLeft: state.keyboard.ArrowLeft,
+      ArrowRight: state.keyboard.ArrowRight,
+      ArrowDown: state.keyboard.ArrowDown,
+      ShiftLeft: state.keyboard.ShiftLeft,
+      AltLeft: state.keyboard.AltLeft,
+    }),
+    shallow
+  );
   const selections = useCommandStore((state) => state.selected, shallow);
   const [getSelections] = useFresh(selections);
-  const getCommands = useFreshSelector(selectCommandsTable);
+  const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
 
   useEffect(() => {
     if (

@@ -78,11 +78,11 @@ export default function Metrics({
       x2: x,
       color: "gray",
       labelX: x + 3,
-      labelY: 1,
+      labelY: 25,
       origin: height,
     },
     {
-      name: "rightSide",
+      name: "rightSide" + `${advanceWidth}`,
       origin: advanceWidth,
       y1: 0,
       y2: height,
@@ -90,7 +90,8 @@ export default function Metrics({
       x2: x + advanceWidth * scale,
       color: "gray",
       labelX: x + advanceWidth * scale + 3,
-      labelY: 1,
+
+      labelY: 25,
     },
   ];
 
