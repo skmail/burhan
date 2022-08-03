@@ -18,7 +18,7 @@ export const useWorkspaceStore = create<State>((set) => ({
   ready: false,
   keyboard: {},
   
-  leftSidebar: false,
+  leftSidebar: true,
   toggleLeftSidebarSide: () =>
     set(
       produce<State>((state) => {
