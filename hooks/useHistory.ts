@@ -1,55 +1,70 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { History } from "../types/History";
 
+import create from "zustand";
+import produce from "immer";
+import useFreshSelector from "./useFreshSelector";
+import shallow from "zustand/shallow";
+
+type State = {
+  items: History[];
+  index: number;
+  updateIndex: (index: number) => void;
+  add: (item: History) => void;
+};
+
+export const useHistoryStore = create<State>((set) => ({
+  items: [],
+  index: -1,
+
+  updateIndex: (index: number) =>
+    set(
+      produce<State>((state) => {
+        state.index = index;
+      })
+    ),
+
+  add: (item: History) =>
+    set(
+      produce<State>((state) => {
+        state.items = [...state.items.slice(0, state.index + 1), item];
+        state.index += 1;
+      })
+    ),
+}));
+
 export default function useHistory(
   apply: (history: History, payloadkey: "new" | "old") => void
 ) {
-  const [history, setHistory] = useState<History[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(-1);
-  const canRedo = currentIndex < history.length - 1;
-  const canUndo = currentIndex > -1;
+  const [canRedo, canUndo] = useHistoryStore(
+    (state) => [state.index < state.items.length - 1, state.index > -1],
+    shallow
+  );
 
-  const fresh = useRef({
-    canRedo,
-    canUndo,
-    currentIndex,
-    history,
-    apply,
-  });
+  const updateIndex = useHistoryStore((state) => state.updateIndex);
 
-  fresh.current.canUndo = canUndo;
-  fresh.current.canRedo = canRedo;
-  fresh.current.currentIndex = currentIndex;
-  fresh.current.history = history;
-  fresh.current.apply = apply;
+  const getState = useFreshSelector<State>(useHistoryStore, (state) => state);
 
   const redo = useCallback(() => {
-    fresh.current.apply(
-      fresh.current.history[fresh.current.currentIndex + 1],
-      "new"
-    );
-    setCurrentIndex((index) => index + 1);
+    const nextIndex = getState().index + 1;
+    apply(getState().items[nextIndex], "new");
+    updateIndex(nextIndex);
   }, []);
 
   const undo = useCallback(() => {
-    fresh.current.apply(
-      fresh.current.history[fresh.current.currentIndex],
-      "old"
-    );
-    setCurrentIndex(fresh.current.currentIndex - 1);
+    apply(getState().items[getState().index], "old");
+    updateIndex(getState().index - 1);
   }, []);
+
+  const add = useHistoryStore((state) => state.add);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.shiftKey && (e.metaKey || e.ctrlKey) && e.code === "KeyZ") {
-        if (fresh.current.canRedo) {
+        if (canRedo) {
           redo();
         }
-      } else if (
-        fresh.current.canUndo &&
-        (e.metaKey || e.ctrlKey) &&
-        e.code === "KeyZ"
-      ) {
+      } else if (canUndo && (e.metaKey || e.ctrlKey) && e.code === "KeyZ") {
         undo();
       }
     };
@@ -59,26 +74,17 @@ export default function useHistory(
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, []);
-
-  const addToHistory = useCallback((item: History) => {
-    setHistory((history) => {
-      history = [...history.slice(0, fresh.current.currentIndex + 1), item];
-      setCurrentIndex(history.length - 1);
-      return history;
-    });
-  }, []);
+  }, [canRedo, canUndo]);
 
   const result = useMemo(
     () => ({
-      history,
       canRedo,
       canUndo,
-      addToHistory,
+      addToHistory: add,
       redo,
       undo,
     }),
-    [history, canRedo, canUndo, addToHistory, redo, undo]
+    [canRedo, canUndo, add, redo, undo]
   );
   return result;
 }

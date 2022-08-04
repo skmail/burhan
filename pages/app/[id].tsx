@@ -85,7 +85,7 @@ const App: NextPage = () => {
   const selected = fontState.selectedGlyphId;
 
   const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
-
+  const replaceCommands = useFontStore((state) => state.replaceCommands);
   const history = useHistory((history, key) => {
     switch (history.type) {
       case "command.update":
@@ -95,6 +95,11 @@ const App: NextPage = () => {
         break;
       case "commands.update":
         updateCommands(history.payload[key]);
+        break;
+
+      case "commands.delete":
+      case "commands.add":
+        replaceCommands(history.payload[key]);
         break;
     }
   });

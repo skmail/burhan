@@ -20,7 +20,9 @@ export default function HorizontalRuler({
 }: Props) {
   const barSize = 25;
   let unit = size / zoom / (size / 100);
-  if (unit < 5) {
+  if(unit < 1){
+    unit = 0.5
+  }else if (unit < 5) {
     unit = 1;
   } else if (unit < 10) {
     unit = 5;

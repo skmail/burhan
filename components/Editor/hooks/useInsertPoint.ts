@@ -2,6 +2,7 @@ import { Bezier } from "bezier-js";
 import { useCallback } from "react";
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
+import { useHistoryStore } from "../../../hooks/useHistory";
 import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
 import { Command, NewPoint, OnCommandsAdd, Point, Table } from "../../../types";
 
@@ -42,6 +43,7 @@ const toBzCommands = (p1: Point, p2: Point, p3: Point) => {
 export default function useInsertPoint() {
   const replaceCommands = useFontStore((state) => state.replaceCommands);
   const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
+  const addToHistory = useHistoryStore((state) => state.add);
 
   const onInsert = useCallback((newPoint: NewPoint) => {
     let primaryId = "";
@@ -67,6 +69,22 @@ export default function useInsertPoint() {
           [lineTo.id]: lineTo,
         },
       });
+
+      addToHistory({
+        type: "commands.add",
+        payload: {
+          new: {
+            ids: ids,
+            items: {
+              [lineTo.id]: lineTo,
+            },
+          },
+          old: {
+            ids: commands.ids,
+            items: {},
+          },
+        },
+      });
     } else if (newPoint.command.command === "closePath") {
       const index = commands.ids.length - 1;
       const lineTo: Command = {
@@ -79,6 +97,21 @@ export default function useInsertPoint() {
 
       primaryId = lineTo.id;
 
+      addToHistory({
+        type: "commands.add",
+        payload: {
+          new: {
+            ids: ids,
+            items: {
+              [lineTo.id]: lineTo,
+            },
+          },
+          old: {
+            ids: commands.ids,
+            items: {},
+          },
+        },
+      });
       replaceCommands({
         ids: ids,
         items: {
@@ -131,7 +164,7 @@ export default function useInsertPoint() {
       );
       primaryId = newCommands[2].id;
 
-      replaceCommands({
+      const toInsert = {
         ids,
         items: newCommands.reduce(
           (acc, item) => ({
@@ -140,7 +173,20 @@ export default function useInsertPoint() {
           }),
           {}
         ),
+      };
+
+      addToHistory({
+        type: "commands.add",
+        payload: {
+          new: toInsert,
+          old: {
+            ids: commands.ids,
+            items: {},
+          },
+        },
       });
+
+      replaceCommands(toInsert);
     } else {
       return;
     }

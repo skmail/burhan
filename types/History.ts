@@ -1,4 +1,4 @@
-import { Command } from "../types";
+import { Command, Table } from "../types";
 
 export interface HistoryCommandUpdate {
   type: "command.update";
@@ -10,7 +10,21 @@ export interface HistoryCommandsUpdate {
   payload: HistoryPayload<Record<string, Command>>;
 }
 
-export type History = HistoryCommandUpdate | HistoryCommandsUpdate;
+export interface HistoryCommandsDelete {
+  type: "commands.delete";
+  payload: HistoryPayload<Table<Command>>;
+}
+
+export interface HistoryCommandsAdd {
+  type: "commands.add";
+  payload: HistoryPayload<Table<Command>>;
+}
+
+export type History =
+  | HistoryCommandUpdate
+  | HistoryCommandsUpdate
+  | HistoryCommandsDelete
+  | HistoryCommandsAdd;
 
 export interface HistoryManager {
   canRedo: boolean;

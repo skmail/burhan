@@ -5,12 +5,13 @@ import shallow from "zustand/shallow";
 
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
+import { useHistoryStore } from "../../../hooks/useHistory";
 import useCommandStore from "../../../store/commands/reducer";
 
 import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
 import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import { Command } from "../../../types";
- 
+
 export default function useDeletePoints() {
   const { Backspace, Delete } = useWorkspaceStore((state) => {
     return {
@@ -27,6 +28,8 @@ export default function useDeletePoints() {
   const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
 
   const replaceCommands = useFontStore((state) => state.replaceCommands);
+
+  const addToHistory = useHistoryStore((state) => state.add);
 
   useEffect(() => {
     if (!Backspace && !Delete) {
@@ -109,9 +112,21 @@ export default function useDeletePoints() {
 
       ids = ids.filter((id) => !result.includes(id));
     }
-
     select([]);
 
+    addToHistory({
+      type: "commands.delete",
+      payload: {
+        old: {
+          ids: commands.ids,
+          items: {},
+        },
+        new: {
+          ids,
+          items,
+        },
+      },
+    });
     replaceCommands({
       ids,
       items,
