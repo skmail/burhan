@@ -117,10 +117,7 @@ export default function useDeletePoints() {
     addToHistory({
       type: "commands.delete",
       payload: {
-        old: {
-          ids: commands.ids,
-          items: {},
-        },
+        old: commands,
         new: {
           ids,
           items,

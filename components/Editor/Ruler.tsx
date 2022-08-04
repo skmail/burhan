@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Group, Rect, Text } from "react-konva";
 import useFreshSelector from "../../hooks/useFreshSelector";
 import { useFontStore } from "../../store/font/reducer";
@@ -18,83 +18,85 @@ export default function HorizontalRuler({
   direction = "horizontal",
   scrollPosition,
 }: Props) {
-  const barSize = 25;
-  let unit = size / zoom / (size / 100);
-  if(unit < 1){
-    unit = 0.5
-  }else if (unit < 5) {
-    unit = 1;
-  } else if (unit < 10) {
-    unit = 5;
-  } else if (unit < 30) {
-    unit = 10;
-  } else if (unit < 50) {
-    unit = 20;
-  } else if (unit < 100) {
-    unit = 50;
-  } else if (unit < 300) {
-    unit = 100;
-  } else if (unit < 500) {
-    unit = 250;
-  } else if (unit < 1000) {
-    unit = 500;
-  } else if (unit < 10000) {
-    unit = 2500;
-  } else {
-    unit = 10000;
-  }
+  const points = useMemo(() => {
+    let unit = size / zoom / (size / 100);
+    if (unit < 1) {
+      unit = 0.5;
+    } else if (unit < 5) {
+      unit = 1;
+    } else if (unit < 10) {
+      unit = 5;
+    } else if (unit < 30) {
+      unit = 10;
+    } else if (unit < 50) {
+      unit = 20;
+    } else if (unit < 100) {
+      unit = 50;
+    } else if (unit < 300) {
+      unit = 100;
+    } else if (unit < 500) {
+      unit = 250;
+    } else if (unit < 1000) {
+      unit = 500;
+    } else if (unit < 10000) {
+      unit = 2500;
+    } else {
+      unit = 10000;
+    }
 
-  const zoomUnit = unit * zoom;
+    const zoomUnit = unit * zoom;
 
-  const opacity = Math.ceil(zoom) - zoom;
+    const opacity = Math.ceil(zoom) - zoom;
 
-  const minRange = Math.floor((-scrollPosition * zoom) / zoomUnit);
-  const maxRange = Math.ceil((-scrollPosition * zoom + size) / zoomUnit);
+    const minRange = Math.floor((-scrollPosition * zoom) / zoomUnit);
+    const maxRange = Math.ceil((-scrollPosition * zoom + size) / zoomUnit);
 
-  const length = maxRange - minRange;
+    const length = maxRange - minRange;
 
-  const range = [-Infinity, Infinity];
+    const range = [-Infinity, Infinity];
 
-  const points = [];
+    const points = [];
 
-  let segment = Math.ceil(zoomUnit / size);
+    let segment = Math.ceil(zoomUnit / size);
 
-  if (!segment || segment === Infinity) {
-    segment = 1;
-  }
+    if (!segment || segment === Infinity) {
+      segment = 1;
+    }
 
-  for (let i = 0; i <= length; ++i) {
-    const vv = i + minRange;
-    const startValue = vv * unit;
+    for (let i = 0; i <= length; ++i) {
+      const vv = i + minRange;
+      const startValue = vv * unit;
 
-    const startPos = (startValue + scrollPosition) * zoom;
+      const startPos = (startValue + scrollPosition) * zoom;
 
-    for (let j = 0; j < segment; ++j) {
-      const pos = startPos + (j / segment) * zoomUnit;
-      const value = startValue + (j / segment) * unit;
+      for (let j = 0; j < segment; ++j) {
+        const pos = startPos + (j / segment) * zoomUnit;
+        const value = startValue + (j / segment) * unit;
 
-      if (pos < 0 || pos >= size || value < range[0] || value > range[1]) {
-        continue;
-      }
+        if (pos < 0 || pos >= size || value < range[0] || value > range[1]) {
+          continue;
+        }
 
-      if (direction === "vertical") {
-        points.push({
-          x: 0,
-          y: pos,
-          isSub: j > 0,
-          label: String(Math.round(value)),
-        });
-      } else {
-        points.push({
-          x: pos,
-          y: 0,
-          isSub: j > 0,
-          label: String(Math.round(value)),
-        });
+        if (direction === "vertical") {
+          points.push({
+            x: 0,
+            y: pos,
+            isSub: j > 0,
+            label: String(Math.round(value)),
+          });
+        } else {
+          points.push({
+            x: pos,
+            y: 0,
+            isSub: j > 0,
+            label: String(Math.round(value)),
+          });
+        }
       }
     }
-  }
-
+    return points;
+  }, [size, zoom, scrollPosition]);
+  const barSize = 25;
   let groupProps = {
     clipHeight: 0,
     clipWidth: 0,

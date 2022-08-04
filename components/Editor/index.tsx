@@ -337,14 +337,6 @@ function Editor({
             />
           </Group>
 
-          <Guidelines
-            baseline={baseline}
-            width={width}
-            scale={scale}
-            x={x}
-            height={height}
-          />
-
           <Ruler
             scrollPosition={x / scale}
             size={Math.max(width, height)}
@@ -372,6 +364,13 @@ function Editor({
             baseline={baseline}
             scale={scale}
             scaleWithoutZoom={scaleWithoutZoom}
+          />
+          <Guidelines
+            baseline={baseline}
+            width={width}
+            scale={scale}
+            x={x}
+            height={height}
           />
         </Layer>
       </Stage>

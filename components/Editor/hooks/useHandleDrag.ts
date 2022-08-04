@@ -15,6 +15,7 @@ import {
   Command,
   Guideline,
   Table,
+  Ruler,
 } from "../../../types";
 import { HistoryCommandsUpdate, HistoryManager } from "../../../types/History";
 import computeAngle from "../../../utils/computeAngle";
@@ -53,6 +54,10 @@ export default function useHandleDrag({
   const [isDragging, setIsDragging] = useState(false);
   const [getSnapPoints] = useFresh(snapPoints);
 
+  const getRulers = useFreshSelector<Ruler[]>(
+    useFontStore,
+    (state) => state.rulers
+  );
   const pendingDragHistory = useRef<HistoryCommandsUpdate>();
 
   const cacheCommands = useRef<Table<Command> | undefined>(undefined);
@@ -105,6 +110,18 @@ export default function useHandleDrag({
 
     if (options.allowSnap) {
       const snapPoints = [...(getSnapPoints() as any)];
+
+      for (let ruler of getRulers()) {
+        snapPoints.push({
+          id: ruler.id,
+          command: ruler.direction + "Ruler",
+          args:
+            ruler.direction === "horizontal"
+              ? [ruler.position / scale, 0]
+              : [0, ruler.position / scale],
+        });
+      }
+
       for (let id of commands.ids) {
         if (selections.includes(id)) {
           continue;

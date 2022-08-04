@@ -79,21 +79,19 @@ export default function useInsertPoint() {
               [lineTo.id]: lineTo,
             },
           },
-          old: {
-            ids: commands.ids,
-            items: {},
-          },
+          old: commands,
         },
       });
     } else if (newPoint.command.command === "closePath") {
-      const index = commands.ids.length - 1;
+      let index = commands.ids.indexOf(newPoint.command.id) + 1;
+      
       const lineTo: Command = {
         command: "lineTo",
         id: String(Math.random()),
         args: [newPoint.point.x, newPoint.point.y],
       };
 
-      const ids = insert(commands.ids, index, [lineTo.id]);
+      const ids = insert(commands.ids, index - 1, [lineTo.id]);
 
       primaryId = lineTo.id;
 
@@ -106,10 +104,7 @@ export default function useInsertPoint() {
               [lineTo.id]: lineTo,
             },
           },
-          old: {
-            ids: commands.ids,
-            items: {},
-          },
+          old: commands,
         },
       });
       replaceCommands({
@@ -179,10 +174,7 @@ export default function useInsertPoint() {
         type: "commands.add",
         payload: {
           new: toInsert,
-          old: {
-            ids: commands.ids,
-            items: {},
-          },
+          old: commands,
         },
       });
 
