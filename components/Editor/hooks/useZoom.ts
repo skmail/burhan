@@ -43,9 +43,7 @@ export default function useZoom({ workspaceRef, setPan, pan }: Props) {
   }, []);
 
   const updateZoom = (value: number) => {
-    setZoom((zoom) => {      
-      return Math.min(100, Math.max(zoom + value, 0.1));
-    });
+    setZoom((zoom) => Math.min(100, Math.max(zoom + zoom * value, 0.1)));
   };
 
   return {
