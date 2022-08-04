@@ -33,16 +33,7 @@ export const useFontStore = create<State>((set) => ({
   newPoint: undefined,
   activeRuler: "",
   rulers: [
-    {
-      id: "1",
-      position: 70,
-      direction: "horizontal",
-    },
-    {
-      id: "2",
-      position: 70,
-      direction: "vertical",
-    },
+  
   ],
   isActiveRulerToDelete: false,
   setActiveRulerToDelete: (isReady) =>
