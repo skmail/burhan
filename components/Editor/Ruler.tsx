@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Group, Rect, Text } from "react-konva";
+import useFreshSelector from "../../hooks/useFreshSelector";
+import { useFontStore } from "../../store/font/reducer";
+import vector from "../../utils/vector";
 type RulerDirection = "horizontal" | "vertical";
 
 interface Props {
@@ -52,17 +55,16 @@ export default function HorizontalRuler({
 
   const points = [];
 
-  const segment = Math.ceil(zoomUnit / size);
+  let segment = Math.ceil(zoomUnit / size);
 
   if (!segment || segment === Infinity) {
-    return null;
+    segment = 1;
   }
-  
+
   for (let i = 0; i <= length; ++i) {
     const vv = i + minRange;
     const startValue = vv * unit;
 
-    
     const startPos = (startValue + scrollPosition) * zoom;
 
     for (let j = 0; j < segment; ++j) {
@@ -72,7 +74,7 @@ export default function HorizontalRuler({
       if (pos < 0 || pos >= size || value < range[0] || value > range[1]) {
         continue;
       }
-      
+
       if (direction === "vertical") {
         points.push({
           x: 0,
@@ -111,9 +113,62 @@ export default function HorizontalRuler({
   } else {
     rectProps.x = barSize;
   }
-
+  const addRuler = useFontStore((state) => state.addRuler);
+  const setActiveRuler = useFontStore((state) => state.setActiveRuler);
+  const getActiveRuler = useFreshSelector(useFontStore, (state) => {
+    if (!state.activeRuler) {
+      return;
+    }
+    return state.rulers.find((ruler: any) => ruler.id === state.activeRuler);
+  });
+  const setActiveRulerToDelete = useFontStore(
+    (state) => state.setActiveRulerToDelete
+  );
   return (
-    <Group {...groupProps} x={0} y={0}>
+    <Group
+      onMouseEnter={() => {
+        const activeRuler = getActiveRuler();
+        const isActiveToDelete =
+          activeRuler && activeRuler.direction !== direction;
+
+        if (activeRuler) {
+          setActiveRulerToDelete(isActiveToDelete);
+        }
+
+        if (isActiveToDelete) {
+          return;
+        }
+        if (direction === "horizontal") {
+          document.body.style.cursor = "ew-resize";
+        } else {
+          document.body.style.cursor = "ns-resize";
+        }
+      }}
+      onMouseLeave={() => {
+        document.body.style.cursor = "auto";
+        setActiveRulerToDelete(false);
+      }}
+      onMouseDown={(e) => {
+        let position: number;
+        if (direction == "horizontal") {
+          // @ts-ignore
+          position = Math.round(e.evt.layerX / zoom - scrollPosition);
+        } else {
+          // @ts-ignore
+          position = Math.round(scrollPosition - e.evt.layerY / zoom);
+        }
+        const id = String(Math.random());
+        setActiveRuler(id);
+        addRuler({
+          id,
+          direction,
+          position,
+        });
+      }}
+      {...groupProps}
+      x={0}
+      y={0}
+    >
       <Rect {...rectProps} fill="#F3F5F7"></Rect>
       <Rect
         width={direction === "horizontal" ? size : 0}

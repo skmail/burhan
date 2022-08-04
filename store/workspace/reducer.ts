@@ -1,6 +1,7 @@
 import create from "zustand";
 import produce from "immer";
 import { Guideline } from "../../types";
+type DrawingStep = "point" | "line" | "curve" | "end";
 
 interface State {
   ready: boolean;
@@ -15,6 +16,12 @@ interface State {
   toggleRightSidebarSide: () => void;
   guidelines: Guideline[];
   setGuidelines: (guidelines: Guideline[]) => void;
+
+  drawing: {
+    enabled: boolean;
+    step: DrawingStep;
+  };
+  setDrawingStep: (step: DrawingStep) => void;
 }
 
 export const useWorkspaceStore = create<State>((set) => ({
@@ -22,6 +29,17 @@ export const useWorkspaceStore = create<State>((set) => ({
   keyboard: {},
   guidelines: [],
 
+  drawing: {
+    enabled: false,
+    step: "point",
+  },
+
+  setDrawingStep: (step: State["drawing"]["step"]) =>
+    set(
+      produce<State>((state) => {
+        state.drawing.step = step;
+      })
+    ),
   setGuidelines: (guidelines) =>
     set(
       produce<State>((state) => {

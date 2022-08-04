@@ -1,4 +1,4 @@
-import { Command, Font, Table, NewPoint } from "../../types";
+import { Command, Font, Table, NewPoint, Ruler } from "../../types";
 import create from "zustand";
 import produce from "immer";
 
@@ -15,6 +15,14 @@ interface State {
   previousGlyph: () => void;
   newPoint?: NewPoint;
   setNewPoint: (point?: NewPoint) => void;
+  rulers: Ruler[];
+  addRuler: (ruler: Ruler) => void;
+
+  updateRulerPosition: (id: string, position: number) => void;
+  activeRuler: string;
+  setActiveRuler: (id: string) => void;
+  isActiveRulerToDelete: boolean;
+  setActiveRulerToDelete: (isReady: boolean) => void;
 }
 
 export const useFontStore = create<State>((set) => ({
@@ -23,11 +31,63 @@ export const useFontStore = create<State>((set) => ({
   selectedGlyphId: "",
   downloadUrl: undefined,
   newPoint: undefined,
+  activeRuler: "",
+  rulers: [
+    {
+      id: "1",
+      position: 70,
+      direction: "horizontal",
+    },
+    {
+      id: "2",
+      position: 70,
+      direction: "vertical",
+    },
+  ],
+  isActiveRulerToDelete: false,
+  setActiveRulerToDelete: (isReady) =>
+    set(
+      produce<State>((state) => {
+        state.isActiveRulerToDelete = isReady;
+      })
+    ),
+  addRuler: (ruler: State["rulers"]["0"]) =>
+    set(
+      produce<State>((state) => {
+        state.rulers.push(ruler);
+      })
+    ),
 
+  setActiveRuler: (id: string) =>
+    set(
+      produce<State>((state) => {
+        if (state.isActiveRulerToDelete && state.activeRuler) {
+          state.rulers = state.rulers.filter((ruler) => {
+            return ruler.id !== state.activeRuler;
+          });
+          state.isActiveRulerToDelete = false;
+        }
+        state.activeRuler = id;
+      })
+    ),
   setNewPoint: (point) =>
     set(
       produce<State>((state) => {
         state.newPoint = point;
+      })
+    ),
+  updateRulerPosition: (id: string, position) =>
+    set(
+      produce<State>((state) => {
+        state.rulers = state.rulers.map((ruler) => {
+          if (ruler.id === id) {
+            return {
+              ...ruler,
+              position,
+            };
+          }
+          return ruler;
+        });
       })
     ),
   setDownloadUrl: (url: string) =>

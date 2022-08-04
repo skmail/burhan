@@ -37,6 +37,8 @@ import shallow from "zustand/shallow";
 import NewInputHandle from "./NewPointHandle";
 import useCommandStore from "../../store/commands/reducer";
 import Guidelines from "./Guidelines";
+import DrawingLayer from "./DrawingLayer";
+import RulerLines from "./RulerLines";
 
 interface Props {
   selectedHandles: string[];
@@ -161,44 +163,11 @@ function Editor({
     onDragEnd,
   });
 
-  const { isDrawing, data: drawingData } = useDrawingPen({
-    x,
-    baseline,
-    scale,
-    workspaceRef: ref,
-    scaleWithoutZoom,
-    onCommandsAdd: onCommandsAdd,
-    commands: glyph.path.commands,
-  });
-
   const { highlightNewPoint, resetNewPoint } = useHighlightNewPoint({
     x,
     scale,
     baseline,
   });
-
-  const onHandleActivate = useCallback(
-    (id: string) => {
-      if (isDrawing) {
-        const command: Command = {
-          id: String(Math.random()),
-          command: "closePath",
-          // @ts-ignore
-          args: [],
-        };
-
-        onCommandsAdd({
-          ids: [...getFreshCommands().ids, command.id],
-          items: {
-            [command.id]: command,
-          },
-        });
-        return;
-      }
-      setIsDragging(true);
-    },
-    [isDrawing]
-  );
 
   const ids = useFontStore((state) => selectCommandsTable(state).ids, shallow);
 
@@ -306,6 +275,13 @@ function Editor({
         ]}
       />
 
+      <DrawingLayer
+        x={x}
+        baseline={baseline}
+        scale={scale}
+        scaleWithoutZoom={scaleWithoutZoom}
+      />
+
       <Stage
         onMouseMove={(e) => {
           if (isHandleHovered && hasNewPoint) {
@@ -336,14 +312,6 @@ function Editor({
             advanceWidth={glyph.advanceWidth}
           />
           <Group opacity={1}>
-            {!!drawingData && (
-              <Path
-                data={drawingData}
-                strokeWidth={settings.viewMode === "outline" ? 2 : 0}
-                stroke="#4D7FEE"
-                fill={settings.viewMode !== "outline" ? "#4D7FEE" : undefined}
-              />
-            )}
             <Path
               x={x}
               y={baseline}
@@ -396,6 +364,14 @@ function Editor({
             fill="#F3F5F7"
             stroke={"#C4CBD7"}
             strokeWidth={2}
+          />
+          <RulerLines
+            height={height}
+            width={width}
+            x={x}
+            baseline={baseline}
+            scale={scale}
+            scaleWithoutZoom={scaleWithoutZoom}
           />
         </Layer>
       </Stage>

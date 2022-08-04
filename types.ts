@@ -123,3 +123,9 @@ export interface NewPoint {
   command: Command;
   point: Point;
 }
+
+export interface Ruler {
+  id: string;
+  position: number;
+  direction: "vertical" | "horizontal";
+}

@@ -1,8 +1,9 @@
 import { RefObject, useEffect, useRef, useState } from "react";
-
 import useFreshSelector from "../../hooks/useFreshSelector";
+
 import useCommandStore from "../../store/commands/reducer";
 import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 import { Bounds } from "../../types";
 import onLeftButton from "../../utils/onLeftButton";
 import scaleX from "../../utils/scaleX";
@@ -30,8 +31,13 @@ export default function SelectionArea({
   });
 
   const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
-
   const select = useCommandStore((state) => state.select);
+
+  const getIsDrawing = useFreshSelector(
+    useWorkspaceStore,
+    (state: any) => state.drawing.enabled
+  );
+  const getActiveRuler = useFreshSelector(useFontStore, state => state.activeRuler)
 
   useEffect(() => {
     if (!workspaceRef.current) {
@@ -43,6 +49,9 @@ export default function SelectionArea({
     let handles = getCommands();
 
     const onMousedown = onLeftButton((e: MouseEvent) => {
+      if (getIsDrawing() || getActiveRuler()) {
+        return;
+      }
       handles = getCommands();
       if (!workspaceRef.current) {
         return;
