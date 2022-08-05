@@ -3,6 +3,10 @@ import axios from "axios";
 type Lookup = {
   name: string;
   oct: string;
+  hex: string;
+  html: string;
+  dec: string;
+  char: string;
 };
 export default function useGlyphLookup(codePoints: number[]) {
   return useQuery<Lookup[]>(

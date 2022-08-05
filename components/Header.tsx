@@ -1,3 +1,4 @@
+import { useState } from "react";
 import shallow from "zustand/shallow";
 import useGlyphLookup from "../hooks/useGlyphLookup";
 import { useFontStore } from "../store/font/reducer";
@@ -23,11 +24,15 @@ function Button({ active = false, className, ...props }: Props) {
   );
 }
 
+const codeViews = ["oct", "hex", "html", "dec", "char"] as const;
+
 export default function Header() {
   const [leftSidebar, toggleLeftSidebarSide] = useWorkspaceStore(
     (state) => [state.leftSidebar, state.toggleLeftSidebarSide],
     shallow
   );
+  const [charCodeView, setCharCodeView] =
+    useState<typeof codeViews[number]>("oct");
 
   const glyph = useFontStore((state) => {
     if (!state.font || !state.selectedGlyphId) {
@@ -101,9 +106,26 @@ export default function Header() {
           )}
 
           {!lookup.isLoading && !!lookup.data ? (
-            <span className="text-sm font-light ml-2">
-              ({lookup.data.map((data) => `U+${data.oct}`).join(" ")})
-            </span>
+            <button
+              onClick={(e) => {
+                const index = codeViews.indexOf(charCodeView);
+                if (index >= codeViews.length - 1) {
+                  setCharCodeView(codeViews[0]);
+                } else {
+                  setCharCodeView(codeViews[index + 1]);
+                }
+              }}
+              className="text-sm font-light ml-2 hover:bg-bg-1 px-2 py-0.5 rounded-md text-main"
+            >
+              ({" "}
+              {lookup.data
+                .map(
+                  (data) =>
+                    `${charCodeView === "oct" ? "U+" : ""}${data[charCodeView]}`
+                )
+                .join(" ")}{" "}
+              )
+            </button>
           ) : (
             <span className="w-10 h-5 bg-bg-1 ml-2 rounded-md animate-pulse" />
           )}
