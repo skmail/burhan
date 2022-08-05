@@ -45,9 +45,6 @@ export default function HorizontalRuler({
     }
 
     const zoomUnit = unit * zoom;
-
-    const opacity = Math.ceil(zoom) - zoom;
-
     const minRange = Math.floor((-scrollPosition * zoom) / zoomUnit);
     const maxRange = Math.ceil((-scrollPosition * zoom + size) / zoomUnit);
 
@@ -71,7 +68,13 @@ export default function HorizontalRuler({
 
       for (let j = 0; j < segment; ++j) {
         const pos = startPos + (j / segment) * zoomUnit;
-        const value = startValue + (j / segment) * unit;
+        let value: number;
+
+        if (direction === "vertical") {
+          value = (j / segment) * unit - startValue;
+        } else {
+          value = startValue + (j / segment) * unit;
+        }
 
         if (pos < 0 || pos >= size || value < range[0] || value > range[1]) {
           continue;
@@ -94,6 +97,7 @@ export default function HorizontalRuler({
         }
       }
     }
+
     return points;
   }, [size, zoom, scrollPosition]);
   const barSize = 25;
@@ -138,7 +142,6 @@ export default function HorizontalRuler({
         if (activeRuler) {
           setActiveRulerToDelete(isActiveToDelete);
         }
-
         if (isActiveToDelete) {
           return;
         }
@@ -156,11 +159,12 @@ export default function HorizontalRuler({
         let position: number;
         if (direction == "horizontal") {
           // @ts-ignore
-          position = Math.round(e.evt.layerX / zoom - scrollPosition);
+          position = -Math.round(scrollPosition - e.evt.layerX / zoom);
         } else {
           // @ts-ignore
-          position = Math.round(scrollPosition - e.evt.layerY / zoom);
+          position = -Math.round(e.evt.layerY / zoom - scrollPosition);
         }
+
         const id = String(Math.random());
         setActiveRuler(id);
         addRuler({

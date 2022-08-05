@@ -39,6 +39,7 @@ import useCommandStore from "../../store/commands/reducer";
 import Guidelines from "./Guidelines";
 import DrawingLayer from "./DrawingLayer";
 import RulerLines from "./RulerLines";
+import { SceneContext } from "konva/lib/Context";
 
 interface Props {
   selectedHandles: string[];
@@ -178,6 +179,13 @@ function Editor({
   );
 
   const hasNewPoint = useFontStore((state) => !!state.newPoint);
+
+  const clipFunction = useCallback(
+    (ctx: SceneContext) => {
+      ctx.rect(25, 25, width, height);
+    },
+    [width, height]
+  );
   return (
     <div
       className="bg-bg-1 relative transition"
@@ -311,7 +319,7 @@ function Editor({
             x={x}
             advanceWidth={glyph.advanceWidth}
           />
-          <Group opacity={1}>
+          <Group clipFunc={clipFunction}>
             <Path
               x={x}
               y={baseline}
@@ -324,19 +332,7 @@ function Editor({
               stroke="#3b82f6"
               fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
             />
-
-            <NewInputHandle scale={scale} x={x} baseline={baseline} />
-
-            <Handles
-              scale={scale}
-              baseline={baseline}
-              x={x}
-              onDrag={onDrag}
-              onDragEnd={onDragEnd}
-              ids={ids}
-            />
           </Group>
-
           <Ruler
             scrollPosition={x / scale}
             size={Math.max(width, height)}
@@ -372,6 +368,18 @@ function Editor({
             x={x}
             height={height}
           />
+          <Group clipFunc={clipFunction}>
+            <NewInputHandle scale={scale} x={x} baseline={baseline} />
+
+            <Handles
+              scale={scale}
+              baseline={baseline}
+              x={x}
+              onDrag={onDrag}
+              onDragEnd={onDragEnd}
+              ids={ids}
+            />
+          </Group>
         </Layer>
       </Stage>
     </div>

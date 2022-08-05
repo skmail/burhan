@@ -82,9 +82,9 @@ const RulerLine = ({
   let pos = 0;
 
   if (ruler.direction === "vertical") {
-    pos = baseline - ruler.position * scale;
+    pos = ruler.position * -scale + baseline;
   } else {
-    pos = x + ruler.position * scale;
+    pos = x - ruler.position * -scale;
   }
   return (
     <Group key={ruler.id}>
@@ -163,28 +163,34 @@ export default function RulerLines({
         startPosition.x = e.clientX;
         startPosition.y = e.clientY;
       }
+
       if (ruler.direction === "vertical") {
         const screenPosition =
-          baseline - (position + (startPosition.y - e.clientY) / scale) * scale;
+          (baseline / scale -
+            (position - (e.clientY - startPosition.y) / scale)) *
+          scale;
 
-        if (screenPosition <= 25) {
+        if (screenPosition <= 30) {
           exceeded = true;
           updateRulerPosition(ruler.id, height / scale);
           return;
         }
+
         updateRulerPosition(
           ruler.id,
-          position + (startPosition.y - e.clientY) / scale
+          position - (e.clientY - startPosition.y) / scale
         );
       } else {
         const screenPosition =
-          x + (position + (e.clientX - startPosition.x) / scale) * scale;
+          (x / scale + position + (e.clientX - startPosition.x) / scale) *
+          scale;
 
-        if (screenPosition <= 25) {
+        if (screenPosition <= 30) {
           exceeded = true;
           updateRulerPosition(ruler.id, width / scale);
           return;
         }
+
         updateRulerPosition(
           ruler.id,
           position + (e.clientX - startPosition.x) / scale

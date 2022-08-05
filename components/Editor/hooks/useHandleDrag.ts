@@ -117,10 +117,12 @@ export default function useHandleDrag({
           command: ruler.direction + "Ruler",
           args:
             ruler.direction === "horizontal"
-              ? [ruler.position / scale, 0]
-              : [0, ruler.position / scale],
+              ? [ruler.position, 0]
+              : [0, ruler.position],
         });
       }
+
+      console.log(snapPoints);
 
       for (let id of commands.ids) {
         if (selections.includes(id)) {

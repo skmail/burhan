@@ -40,7 +40,9 @@ export default function snap(
         continue;
       }
 
-      const isStrictHorizontal = ["width", "x", "horizontal"].includes(point.command);
+      const isStrictHorizontal = ["width", "x", "horizontalRuler"].includes(
+        point.command
+      );
       const isHorizontal =
         isStrictHorizontal ||
         [

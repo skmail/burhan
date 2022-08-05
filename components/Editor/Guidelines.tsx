@@ -30,13 +30,18 @@ export default function Guidelines({
           guideline.points[1]
         );
 
-        if (guideline.command === "x" || guideline.command === "width") {
+        if (["width", "x", "horizontalRuler"].includes(guideline.command)) {
           origin[1] = 0;
           destination[1] = height;
         } else if (
-          ["baseline", "ascent", "descent", "xHeight", "capHeight"].includes(
-            guideline.command
-          )
+          [
+            "baseline",
+            "ascent",
+            "descent",
+            "xHeight",
+            "capHeight",
+            "verticalRuler",
+          ].includes(guideline.command)
         ) {
           origin[0] = 0;
           destination[0] = width;
