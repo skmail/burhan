@@ -166,12 +166,12 @@ export default function HorizontalRuler({
         }
 
         const id = String(Math.random());
-        setActiveRuler(id);
         addRuler({
           id,
           direction,
           position,
         });
+        setActiveRuler(id);
       }}
       {...groupProps}
       x={0}

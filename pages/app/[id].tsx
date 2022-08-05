@@ -285,15 +285,6 @@ const App: NextPage = () => {
     shallow
   );
 
-  if (query.isLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center text-xl font-light flex-col space-y-4">
-        <div className="animate-spin w-8 h-8 bg-gray-200" />
-        <h1>Font is loading</h1>
-      </div>
-    );
-  }
-
   if (query.isError) {
     return (
       <div className="text-red-500 h-screen w-screen flex items-center justify-center text-xl font-light flex-col space-y-4">
@@ -302,6 +293,15 @@ const App: NextPage = () => {
         <Button onClick={() => router.replace("/")} variant="secondary">
           Go back
         </Button>
+      </div>
+    );
+  }
+
+  if (query.isLoading || !isReady) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center text-xl font-light flex-col space-y-4">
+        <div className="animate-spin w-8 h-8 bg-gray-200" />
+        <h1>Font is loading</h1>
       </div>
     );
   }

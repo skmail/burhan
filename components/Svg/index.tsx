@@ -1,15 +1,18 @@
 import { memo, useMemo } from "react";
+import shallow from "zustand/shallow";
+import { useFontStore } from "../../store/font/reducer";
 import { Font } from "../../types";
 import commandsToPathData from "../../utils/commandsToPathData";
 import computePathCommands from "../../utils/computePathCommands";
 
 interface Props {
-  glyph: Font["glyphs"]["items"][0];
+  id: string;
   fill?: boolean;
   base: number;
 }
 
-function Svg({ glyph, fill = false, base }: Props) {
+function Svg({ id, fill = false, base }: Props) {
+  const glyph = useFontStore((state) => state.font.glyphs.items[id], shallow);
   const data = useMemo(() => {
     return commandsToPathData(
       glyph.path.commands.ids.map((id) => glyph.path.commands.items[id])

@@ -19,7 +19,6 @@ export default function GlyphList({ font, glyphs, selected }: Props) {
     if (!Boolean(keyword)) {
       return glyphs.ids;
     }
-
     return glyphs.ids.filter((id) => {
       const glyph = glyphs.items[id];
       return (
@@ -57,7 +56,6 @@ export default function GlyphList({ font, glyphs, selected }: Props) {
         className={`grid gap-2 grid-cols-3 w-full flex-wrap max-h-full  overflow-y-auto`}
       >
         {ids.map((id) => {
-          const glyph = glyphs.items[id];
           return (
             <div
               key={id}
@@ -65,17 +63,17 @@ export default function GlyphList({ font, glyphs, selected }: Props) {
                 router.replace({
                   query: {
                     ...router.query,
-                    glyph: glyph.id,
+                    glyph: id,
                   },
                 });
               }}
               className={`h-[70px] p-4 rounded-lg flex items-center justify-center relative hover:z-50 ring-inset ${
-                selected === glyph.id
+                selected === id
                   ? "text-active-2 bg-active-1"
                   : "text-main hover:bg-input-bg"
               } relative cursor-pointer`}
             >
-              <Svg glyph={glyph} fill base={font.ascent - font.descent} />
+              <Svg id={id} fill base={font.ascent - font.descent} />
             </div>
           );
         })}
