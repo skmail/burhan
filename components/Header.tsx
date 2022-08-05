@@ -1,4 +1,5 @@
 import shallow from "zustand/shallow";
+import useGlyphLookup from "../hooks/useGlyphLookup";
 import { useFontStore } from "../store/font/reducer";
 import { useWorkspaceStore } from "../store/workspace/reducer";
 import DownloadButton from "./Editor/DownloadButton";
@@ -36,9 +37,12 @@ export default function Header() {
 
     return {
       name: glyph.string,
-      codePoint: glyph.codePoints.join("+"),
+      codePoint: glyph.codePoints.map((c) => "U+" + c.toString(16)).join("+"),
+      codePoints: glyph.codePoints,
     };
   }, shallow);
+
+  const lookup = useGlyphLookup(glyph?.codePoints || []);
 
   const [nextGlyph, previousGlyph] = useFontStore((state) => [
     state.nextGlyph,
@@ -87,9 +91,22 @@ export default function Header() {
             />
           </svg>
         </Button>
-        <span className="text-main text-medium mr-6">
-          English letter {glyph.name}
-          <span className="text-sm font-light ml-2">({glyph.codePoint})</span>
+        <span className="text-main text-medium mr-6 flex items-center">
+          {!lookup.isLoading && !!lookup.data ? (
+            <span className="capitalize">
+              {lookup.data.map((data) => data.name).join("")}
+            </span>
+          ) : (
+            <span className="w-20 h-5 bg-bg-1 rounded-md animate-pulse" />
+          )}
+
+          {!lookup.isLoading && !!lookup.data ? (
+            <span className="text-sm font-light ml-2">
+              ({lookup.data.map((data) => `U+${data.oct}`).join(" ")})
+            </span>
+          ) : (
+            <span className="w-10 h-5 bg-bg-1 ml-2 rounded-md animate-pulse" />
+          )}
         </span>
 
         <button

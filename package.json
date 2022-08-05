@@ -26,6 +26,7 @@
     "react-redux": "^8.0.2",
     "svg-parser": "^2.0.4",
     "svgpath": "^2.5.0",
+    "unicode": "^14.0.0",
     "validator": "^13.7.0",
     "zustand": "^4.0.0"
   },
