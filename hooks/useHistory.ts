@@ -1,37 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { History } from "../types/History";
 
-import create from "zustand";
-import produce from "immer";
-import useFreshSelector from "./useFreshSelector";
 import shallow from "zustand/shallow";
-
-type State = {
-  items: History[];
-  index: number;
-  updateIndex: (index: number) => void;
-  add: (item: History) => void;
-};
-
-export const useHistoryStore = create<State>((set) => ({
-  items: [],
-  index: -1,
-
-  updateIndex: (index: number) =>
-    set(
-      produce<State>((state) => {
-        state.index = index;
-      })
-    ),
-
-  add: (item: History) =>
-    set(
-      produce<State>((state) => {
-        state.items = [...state.items.slice(0, state.index + 1), item];
-        state.index += 1;
-      })
-    ),
-}));
+import { useHistoryStore } from "../store/history";
 
 export default function useHistory(
   apply: (history: History, payloadkey: "new" | "old") => void
@@ -43,16 +14,25 @@ export default function useHistory(
 
   const updateIndex = useHistoryStore((state) => state.updateIndex);
 
-  const getState = useFreshSelector<State>(useHistoryStore, (state) => state);
+  const getState = useCallback(useHistoryStore.getState, []);
 
+  const runApply = (item: History, type: "new" | "old") => {
+    apply(item, type);
+
+    if (item.sub) {
+      for (let sub of item.sub) {
+        runApply(sub, type);
+      }
+    }
+  };
   const redo = useCallback(() => {
     const nextIndex = getState().index + 1;
-    apply(getState().items[nextIndex], "new");
+    runApply(getState().items[nextIndex], "new");
     updateIndex(nextIndex);
   }, []);
 
   const undo = useCallback(() => {
-    apply(getState().items[getState().index], "old");
+    runApply(getState().items[getState().index], "old");
     updateIndex(getState().index - 1);
   }, []);
 

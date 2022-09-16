@@ -1,18 +1,16 @@
 import { RefObject, useEffect, useState } from "react";
+import shallow from "zustand/shallow";
 import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import { Bounds } from "../../../types";
 
 export default function useBounnds(workspaceRef: RefObject<HTMLDivElement>) {
-  const [bounds, setBounds] = useState<Bounds>({
-    width: 0,
-    height: 0,
-    x: 0,
-    y: 0,
-  });
-
   const leftSidebar = useWorkspaceStore((state) => state.leftSidebar);
   const rightSidebar = useWorkspaceStore((state) => state.rightSidebar);
-
+  const [bounds, setBounds] = useWorkspaceStore(
+    (state) => [state.bounds, state.setBounds],
+    shallow
+  );
+  
   useEffect(() => {
     if (!workspaceRef.current || !workspaceRef.current.parentElement) {
       return;
@@ -21,13 +19,12 @@ export default function useBounnds(workspaceRef: RefObject<HTMLDivElement>) {
 
     const onResize = () => {
       const b = parent.getBoundingClientRect();
-      setBounds((bounds) => ({
-        ...bounds,
+      setBounds({
         width: parent.offsetWidth,
         height: parent.offsetHeight,
         x: b.x,
         y: b.y,
-      }));
+      });
     };
 
     onResize();

@@ -42,7 +42,7 @@ const useCommandStore = create<State>((set) => ({
     set(
       produce<State>((state) => {
         const selections: string[] = [];
-        if (append) {
+        if (append || ids === "new") {
           selections.push(...state.selected);
         }
         if (Array.isArray(ids)) {

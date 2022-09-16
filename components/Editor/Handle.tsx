@@ -252,6 +252,7 @@ export default function Handle({
     onMouseEnter,
     onMouseLeave,
   };
+  
   if (!handle.args.length) {
     return null;
   }
@@ -261,7 +262,22 @@ export default function Handle({
       {lines.map((line, index) => (
         <Line key={index} points={line} strokeWidth={1} stroke={"#C4CBD7"} />
       ))}
-      {!isControlPoint && <Circle {...props} radius={clamp(4 * zoom, 3,4)} />}
+      {!isControlPoint && (
+        <Circle
+          onContextMenu={(e) => {
+            e.evt.preventDefault();
+            e.evt.stopPropagation();
+            useWorkspaceStore
+              .getState()
+              .enableContextMenu(`point:${handle.id}`, [
+                e.evt.clientX,
+                e.evt.clientY,
+              ]);
+          }}
+          {...props}
+          radius={clamp(4 * zoom, 3, 4)}
+        />
+      )}
       {isControlPoint && (
         <Rect
           {...props}

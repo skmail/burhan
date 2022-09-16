@@ -6,16 +6,15 @@ import commandsToPathData from "../../utils/commandsToPathData";
 interface Props {
   id: string;
   fill?: boolean;
-  base: number;
 }
 
-function Svg({ id, fill = false, base }: Props) {
+function Svg({ id, fill = false }: Props) {
   const [descent, glyph, height, width] = useFontStore(
     (state) => [
       -state.font.ascent,
       state.font.glyphs.items[id],
       Math.abs(state.font.ascent - state.font.descent),
-      state.font.glyphs.items[id].bbox.width,
+      state.font.glyphs.items[id].bbox.width || 0,
     ],
     shallow
   );

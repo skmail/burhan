@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import shallow from "zustand/shallow";
 import useCommandStore from "../../store/commands/reducer";
 import { useTransformStore } from "../../store/transform";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
@@ -7,13 +8,13 @@ import Button from "../Button";
 export default function NodeTransform() {
   const canEnable = useCommandStore((state) => state.selected.length > 1);
   const toggle = useTransformStore((state) => state.toggle);
-  const disable = useTransformStore((state) => state.disable);
+  const disable = useTransformStore((state) => state.disable, shallow);
 
   useEffect(() => {
     if (!canEnable) {
       disable();
     }
-  }, [canEnable]);
+  }, [canEnable, disable]);
 
   if (!canEnable) {
     return null;

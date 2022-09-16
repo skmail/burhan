@@ -2,7 +2,7 @@ import { Bezier } from "bezier-js";
 import { useCallback } from "react";
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
-import { useHistoryStore } from "../../../hooks/useHistory";
+import { useHistoryStore } from "../../../store/history";
 import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
 import { Command, NewPoint, OnCommandsAdd, Point, Table } from "../../../types";
 
@@ -84,7 +84,7 @@ export default function useInsertPoint() {
       });
     } else if (newPoint.command.command === "closePath") {
       let index = commands.ids.indexOf(newPoint.command.id) + 1;
-      
+
       const lineTo: Command = {
         command: "lineTo",
         id: String(Math.random()),

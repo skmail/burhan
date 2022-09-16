@@ -31,6 +31,8 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import useFreshSelector from "../../hooks/useFreshSelector";
 import NodeTransform from "../../components/Editor/NodeTransform";
 import { FlipButtons } from "../../components/Editor/FlipButtons";
+import { useTransformStore } from "../../store/transform";
+import commandsToPathData from "../../utils/commandsToPathData";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -94,23 +96,29 @@ const App: NextPage = () => {
 
   const selected = fontState.selectedGlyphId;
 
-  const [selectedHandles, setSelectedHandles] = useState<string[]>([]);
-  const replaceCommands = useFontStore((state) => state.replaceCommands);
   const history = useHistory((history, key) => {
     switch (history.type) {
       case "command.update":
-        updateCommands({
+        useFontStore.getState().updateCommands({
           [history.payload[key].id]: history.payload[key],
         });
         break;
       case "commands.update":
-        updateCommands(history.payload[key]);
+        console.log(
+          key,
+          commandsToPathData(Object.values(history.payload[key]))
+        );
+
+        useFontStore.getState().updateCommands(history.payload[key]);
         break;
 
       case "commands.delete":
       case "commands.add":
-        replaceCommands(history.payload[key]);
+        useFontStore.getState().replaceCommands(history.payload[key]);
         break;
+
+      case "transform":
+        useTransformStore.getState().applyFromSnapshot(history.payload[key]);
     }
   });
 
@@ -153,41 +161,6 @@ const App: NextPage = () => {
       fontState.setSelectedGlyph(id);
     }
   }, [query.isLoading, query.isSuccess, router.query.glyph]);
-
-  const updateCommands = useCallback(
-    (commands: Record<string, Command>) => {
-      const font = getFont();
-      const selected = getSelected();
-
-      if (!font) {
-        return;
-      }
-
-      updateFont({
-        ...font,
-        glyphs: {
-          ...font.glyphs,
-          items: {
-            ...font.glyphs.items,
-            [selected]: {
-              ...font.glyphs.items[selected],
-              path: {
-                ...font.glyphs.items[selected].path,
-                commands: {
-                  ...font.glyphs.items[selected].path.commands,
-                  items: {
-                    ...font.glyphs.items[selected].path.commands.items,
-                    ...commands,
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-    },
-    [selected, fontId]
-  );
 
   const setViewMode = (viewMode: ViewMode) => {
     setSettings((settings) => ({
@@ -246,49 +219,6 @@ const App: NextPage = () => {
     [query.data, selected, fontId]
   );
 
-  const onCommandsAdd = useCallback(() => {
-    (table: Font["glyphs"]["items"]["0"]["path"]["commands"]) => {
-      const font = getFont();
-      const selected = getSelected();
-      if (!font) {
-        return;
-      }
-
-      updateFont({
-        ...font,
-        glyphs: {
-          ...font.glyphs,
-          items: {
-            ...font.glyphs.items,
-            [selected]: {
-              ...font.glyphs.items[selected],
-              path: {
-                ...font.glyphs.items[selected].path,
-
-                commands: {
-                  ...font.glyphs.items[selected].path.commands,
-                  ids: table.ids,
-                  items: {
-                    ...font.glyphs.items[selected].path.commands.items,
-                    ...table.items,
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-    };
-  }, []);
-
-  const onSelectHandles = useCallback((ids: string[]) => {
-    setSelectedHandles((selected) => {
-      if (ids.length === 0 && selected.length === 0) {
-        return selected;
-      }
-      return ids;
-    });
-  }, []);
   const leftSidebar = useWorkspaceStore((state) => state.leftSidebar);
   const [toggleRightSidebarSide, rightSidebar] = useWorkspaceStore(
     (state) => [state.toggleRightSidebarSide, state.rightSidebar],

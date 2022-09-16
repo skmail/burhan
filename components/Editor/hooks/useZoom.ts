@@ -1,4 +1,5 @@
 import { RefObject, useEffect, useRef, useState } from "react";
+import { useWorkspaceStore } from "../../../store/workspace/reducer";
 import { PointTuple } from "../../../types";
 import vector from "../../../utils/vector";
 interface Props {
@@ -20,7 +21,7 @@ export default function useZoom({ workspaceRef, setPan, pan }: Props) {
     const parent = workspaceRef.current.parentElement;
 
     const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey) {
+      if (!e.ctrlKey || useWorkspaceStore.getState().contextMenu.active) {
         return;
       }
 

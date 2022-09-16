@@ -1,5 +1,5 @@
-import { SetStateAction, useCallback, useMemo, useRef, useState } from "react";
-import shallow from "zustand/shallow";
+import { useCallback, useRef, useState } from "react";
+
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
 import useCommandStore from "../../../store/commands/reducer";
@@ -16,7 +16,6 @@ import {
   Table,
   Ruler,
 } from "../../../types";
-import { HistoryCommandsUpdate, HistoryManager } from "../../../types/History";
 import computeAngle from "../../../utils/computeAngle";
 import computeDistance from "../../../utils/computeDistance";
 import reflect from "../../../utils/reflect";
@@ -28,14 +27,12 @@ interface Props {
   settings: Settings;
 
   snapPoints: Command[];
-  history: HistoryManager;
 }
 export default function useHandleDrag({
   scaleWithoutZoom,
   scale,
   settings,
   snapPoints,
-  history,
 }: Props) {
   const setGuidelines = useWorkspaceStore((state) => state.setGuidelines);
   const [getScaleWithoutZoom] = useFresh(scaleWithoutZoom);
@@ -57,7 +54,6 @@ export default function useHandleDrag({
     useFontStore,
     (state) => state.rulers
   );
-  const pendingDragHistory = useRef<HistoryCommandsUpdate>();
 
   const cacheCommands = useRef<Table<Command> | undefined>(undefined);
 
@@ -65,6 +61,7 @@ export default function useHandleDrag({
     if (!useFontStore.getState().snapshot) {
       useFontStore.getState().updateSnapshot(getFreshCommands());
     }
+
     options = {
       allowSnap: true,
       ...options,
@@ -88,7 +85,17 @@ export default function useHandleDrag({
       acc.push(id);
       const index = commands.ids.indexOf(command.id);
       if (command.command === "bezierCurveTo") {
-        acc.push(commands.ids[index + 1], commands.ids[index - 1]);
+        if (
+          commands.items[commands.ids[index - 1]].command === "bezierCurveToCP2"
+        ) {
+          acc.push(commands.ids[index - 1]);
+        }
+
+        if (
+          commands.items[commands.ids[index + 1]].command === "bezierCurveToCP1"
+        ) {
+          acc.push(commands.ids[index + 1]);
+        }
       } else if (command.command === "lineTo") {
         const nextPoint = commands.items[commands.ids[index + 1]];
         if (nextPoint && nextPoint.command === "bezierCurveToCP1") {
@@ -260,33 +267,14 @@ export default function useHandleDrag({
     }, {} as Record<string, Command>);
 
     updateCommands(newHandles);
-
-    pendingDragHistory.current = {
-      type: "commands.update",
-      payload: {
-        old: pendingDragHistory.current
-          ? pendingDragHistory.current.payload.old
-          : Object.keys(newHandles).reduce(
-              (acc, id) => ({
-                ...acc,
-                [id]: getFreshCommands().items[id],
-              }),
-              {} as Record<string, Command>
-            ),
-        new: newHandles,
-      },
-    } as HistoryCommandsUpdate;
   }, []);
 
   const onDragEnd = useCallback(() => {
+    useFontStore.getState().commitSnapshotToHistory();
     useFontStore.getState().updateSnapshot();
     cacheCommands.current = undefined;
     setIsDragging(false);
     setGuidelines([]);
-    if (pendingDragHistory.current) {
-      history.addToHistory(pendingDragHistory.current);
-      pendingDragHistory.current = undefined;
-    }
   }, []);
 
   return {

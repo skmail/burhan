@@ -1,3 +1,5 @@
+import { Matrix } from "@free-transform/core";
+
 export interface Box {
   minX: number;
   minY: number;
@@ -139,6 +141,20 @@ export interface Ruler {
   direction: "vertical" | "horizontal";
 }
 
-export type TransformDirection = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
+export type TransformDirection =
+  | "n"
+  | "ne"
+  | "e"
+  | "se"
+  | "s"
+  | "sw"
+  | "w"
+  | "nw";
 
 export type TransformHandle = "warp" | "rotate" | "scale";
+
+export interface TransformSnapshot {
+  affineMatrix: Matrix;
+  perspectiveMatrix: Matrix;
+  bounds: Box & Bounds;
+}

@@ -32,11 +32,14 @@ import EnableControlTransform from "./EnableControlTransform";
 import { SnapshotPath } from "./SnapshotPath";
 import { Path } from "./Path";
 import { useTransformStore } from "../../store/transform";
+import { ContextMenu } from "./ContextMenu";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 
 interface Props {
   settings: Settings;
   history: HistoryManager;
 }
+
 function Editor({ settings, history }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const bounds = useBounds(ref);
@@ -133,12 +136,11 @@ function Editor({ settings, history }: Props) {
 
   useDeletePoints();
 
-  const { onDrag, onDragEnd, isDragging, setIsDragging } = useHandleDrag({
+  const { onDrag, onDragEnd, isDragging } = useHandleDrag({
     scaleWithoutZoom,
     scale,
     settings,
     snapPoints: points,
-    history,
   });
 
   useKeyboardMove({
@@ -263,6 +265,12 @@ function Editor({ settings, history }: Props) {
       />
 
       <Stage
+        onContextMenu={(e) => {
+          e.evt.preventDefault();
+          useWorkspaceStore
+            .getState()
+            .enableContextMenu("workspace", [e.evt.clientX, e.evt.clientY]);
+        }}
         onMouseMove={(e) => {
           if (isHandleHovered && hasNewPoint) {
             resetNewPoint();
@@ -373,6 +381,8 @@ function Editor({ settings, history }: Props) {
         baseline={baseline}
         scale={scale}
       />
+
+      <ContextMenu />
     </div>
   );
 }

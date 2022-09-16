@@ -1,6 +1,6 @@
 import create from "zustand";
 import produce from "immer";
-import { Guideline, Vector } from "../../types";
+import { Bounds, Guideline, Vector } from "../../types";
 import vector from "../../utils/vector";
 type DrawingStep = "point" | "line" | "curve" | "end";
 
@@ -23,9 +23,32 @@ interface State {
     step: DrawingStep;
   };
   setDrawingStep: (step: DrawingStep) => void;
+
+  contextMenu: {
+    active: boolean;
+    item?: string;
+    position: [number, number];
+  };
+  enableContextMenu: (item: string, position: [number, number]) => void;
+  disableContextMenu: () => void;
+  updateContextMenuPosition: (position: [number, number]) => void;
+
+  bounds: Bounds;
+  setBounds: (bounds: Bounds) => void;
 }
 
 export const useWorkspaceStore = create<State>((set) => ({
+  bounds: {
+    width: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  },
+  contextMenu: {
+    active: false,
+    item: undefined,
+    position: [0, 0],
+  },
   ready: false,
   keyboard: {},
   guidelines: [],
@@ -39,6 +62,12 @@ export const useWorkspaceStore = create<State>((set) => ({
     angle: 0,
     enabled: false,
   },
+  setBounds: (bounds: Bounds) =>
+    set(
+      produce<State>((state) => {
+        state.bounds = bounds;
+      })
+    ),
   setDrawingStep: (step: State["drawing"]["step"]) =>
     set(
       produce<State>((state) => {
@@ -89,6 +118,33 @@ export const useWorkspaceStore = create<State>((set) => ({
     set(
       produce<State>((state) => {
         state.keyboard = {};
+      })
+    ),
+
+  enableContextMenu: (item, position) =>
+    set(
+      produce<State>((state) => {
+        state.contextMenu = {
+          active: true,
+          item,
+          position,
+        };
+      })
+    ),
+  disableContextMenu: () =>
+    set(
+      produce<State>((state) => {
+        state.contextMenu = {
+          active: false,
+          item: undefined,
+          position: [0, 0],
+        };
+      })
+    ),
+  updateContextMenuPosition: (position) =>
+    set(
+      produce<State>((state) => {
+        state.contextMenu.position = position;
       })
     ),
 }));

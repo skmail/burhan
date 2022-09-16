@@ -1,11 +1,10 @@
-import { shallowCopy } from "immer/dist/internal";
 import { useEffect } from "react";
 import { shallowEqual } from "react-redux";
 import shallow from "zustand/shallow";
 
 import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
-import { useHistoryStore } from "../../../hooks/useHistory";
+import { useHistoryStore } from "../../../store/history";
 import useCommandStore from "../../../store/commands/reducer";
 
 import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";

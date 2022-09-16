@@ -8,6 +8,7 @@ import {
   Table,
   TransformDirection,
   TransformHandle,
+  TransformSnapshot,
 } from "../types";
 
 import computCommandsBounds from "../utils/computCommandsBounds";
@@ -40,6 +41,10 @@ interface State {
   setCommands: (commands: Table<Command>) => void;
 
   commands: Table<Command>;
+  updateSnapshot: () => void;
+  snapshot: TransformSnapshot;
+
+  applyFromSnapshot: (snapshot: TransformSnapshot) => void;
 }
 
 const defaultBounds = () => ({
@@ -68,6 +73,22 @@ export const useTransformStore = create<State>((set) => ({
   commands: {
     ids: [],
     items: {},
+  },
+
+  updateSnapshot: () =>
+    set(
+      produce<State>((state) => {
+        state.snapshot = {
+          affineMatrix: state.affineMatrix,
+          perspectiveMatrix: state.perspectiveMatrix,
+          bounds: state.bounds,
+        };
+      })
+    ),
+  snapshot: {
+    affineMatrix: identity(),
+    perspectiveMatrix: identity(),
+    bounds: defaultBounds(),
   },
 
   setCommands: (commands) =>
@@ -117,6 +138,11 @@ export const useTransformStore = create<State>((set) => ({
           state.perspectiveMatrix = identity();
           state.targetMatrix = identity();
           state.bounds = defaultBounds();
+          state.snapshot = {
+            affineMatrix: identity(),
+            perspectiveMatrix: identity(),
+            bounds: defaultBounds(),
+          };
         }
       })
     ),
@@ -129,6 +155,12 @@ export const useTransformStore = create<State>((set) => ({
         state.targetMatrix = identity();
 
         state.bounds = defaultBounds();
+
+        state.snapshot = {
+          affineMatrix: identity(),
+          perspectiveMatrix: identity(),
+          bounds: defaultBounds(),
+        };
       })
     ),
   enable: () =>
@@ -139,6 +171,12 @@ export const useTransformStore = create<State>((set) => ({
         state.perspectiveMatrix = identity();
         state.targetMatrix = identity();
         state.bounds = defaultBounds();
+
+        state.snapshot = {
+          affineMatrix: identity(),
+          perspectiveMatrix: identity(),
+          bounds: defaultBounds(),
+        };
       })
     ),
 
@@ -155,6 +193,20 @@ export const useTransformStore = create<State>((set) => ({
       produce<State>((state) => {
         state.perspectiveMatrix = matrix;
         state.targetMatrix = multiply(state.affineMatrix, matrix);
+      })
+    ),
+
+  applyFromSnapshot: (snapshot: TransformSnapshot) =>
+    set(
+      produce<State>((state) => {
+        state.affineMatrix = snapshot.affineMatrix;
+        state.perspectiveMatrix = snapshot.perspectiveMatrix;
+        state.bounds = snapshot.bounds;
+
+        state.targetMatrix = multiply(
+          state.affineMatrix,
+          state.perspectiveMatrix
+        );
       })
     ),
 }));

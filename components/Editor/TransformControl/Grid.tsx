@@ -47,7 +47,7 @@ export function Grid({ matrix, affineMatrix, bounds, scale }: Props) {
     });
 
     data.push("Z");
-    
+
     return data.join(" ");
   }, [matrix, scale, bounds]);
 
@@ -60,6 +60,7 @@ export function Grid({ matrix, affineMatrix, bounds, scale }: Props) {
     <>
       <Path
         onMouseDown={(event) => {
+          useTransformStore.getState().updateSnapshot();
           useFontStore.getState().updateSnapshot(getCommands());
           event.evt.stopPropagation();
           event.evt.preventDefault();
@@ -105,6 +106,20 @@ export function Grid({ matrix, affineMatrix, bounds, scale }: Props) {
           };
 
           const up = () => {
+            useFontStore.getState().commitSnapshotToHistory([
+              {
+                type: "transform",
+                payload: {
+                  old: useTransformStore.getState().snapshot,
+                  new: {
+                    affineMatrix: useTransformStore.getState().affineMatrix,
+                    perspectiveMatrix:
+                      useTransformStore.getState().perspectiveMatrix,
+                    bounds: useTransformStore.getState().bounds,
+                  },
+                },
+              },
+            ]);
             useFontStore.getState().updateSnapshot();
             document.removeEventListener("pointermove", _drag);
             document.removeEventListener("pointerup", up);

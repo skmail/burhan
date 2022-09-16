@@ -37,7 +37,7 @@ export default function parseRawSvg(
 
   let result: Command[] = [];
   const path = svgPath(paths).abs().unshort().unarc();
- 
+
   const bounds = [Infinity, Infinity, -Infinity, -Infinity];
   path.iterate((segment) => {
     const [command, ...points] = segment;
@@ -56,74 +56,74 @@ export default function parseRawSvg(
   const height = bottom - top;
   let sx = baseWidth / width;
   let sy = baseHeight / height;
-  const scale = Math.min(sx, sy);
+  const scale = Math.min(Math.abs(sx), Math.abs(sy));
 
-  path
-    .translate(-left, -top)
-    .scale(scale, -scale)
-    .translate(0, height * scale)
-    .iterate((segment, index, x, y) => {
-      const [command, ...args] = segment;
+  path.scale(scale).iterate((segment) => {
+    const [command, ...args] = segment;
+    const id = String(Math.random());
+    switch (command) {
+      case "M":
+        result.push({
+          id,
+          command: "moveTo",
+          args: args as PointTuple,
+        });
+        break;
+      case "L":
+        result.push({
+          id,
+          command: "lineTo",
+          args: args as PointTuple,
+        });
+        break;
 
-      const id = String(Math.random());
+      case "H":
+        result.push({
+          id,
+          command: "lineTo",
+          //@ts-ignore
+          args: [args[0], result[result.length - 1].args[1]],
+        });
+        break;
+      case "V":
+        result.push({
+          id,
+          command: "lineTo",
+          //@ts-ignore
+          args: [result[result.length - 1].args[0], args[0]],
+        });
+        break;
+      case "C":
+        result = [
+          ...result,
+          ...makeCubicPayload(
+            args as [number, number, number, number, number, number]
+          ),
+        ];
+        break;
 
-      switch (command) {
-        case "M":
-          result.push({
-            id,
-            command: "moveTo",
-            args: args as PointTuple,
-          });
-          break;
-        case "L":
-          result.push({
-            id,
-            command: "lineTo",
-            args: args as PointTuple,
-          });
-          break;
+      case "Q":
+        const prev: PointTuple = result[result.length - 1].args;
+        const quad = args as [number, number, number, number];
+        result = [...result, ...makeCubicPayload(quadraticToQubic(prev, quad))];
+        break;
+      case "Z":
+        result.push({
+          id,
+          command: "closePath",
+          args: [] as any,
+        });
+        break;
+    }
+  });
 
-        case "H":
-          result.push({
-            id,
-            command: "lineTo",
-            //@ts-ignore
-            args: [args[0], result[result.length - 1].args[1]],
-          });
-          break;
-        case "V":
-          result.push({
-            id,
-            command: "lineTo",
-            //@ts-ignore
-            args: [result[result.length - 1].args[0], args[0]],
-          });
-          break;
-        case "C":
-          result = [
-            ...result,
-            ...makeCubicPayload(
-              args as [number, number, number, number, number, number]
-            ),
-          ];
-          break;
+  return result.map((command) => {
+    if (command.args.length) {
+      command.args[0] -= left * scale;
+      command.args[1] -= bottom * scale;
+    }
 
-        case "Q":
-          const prev: PointTuple = result[result.length - 1].args;
-          const quad = args as [number, number, number, number];
-          result = [
-            ...result,
-            ...makeCubicPayload(quadraticToQubic(prev, quad)),
-          ];
-          break;
-        case "Z":
-          result.push({
-            id,
-            command: "closePath",
-            args: [] as any,
-          });
-          break;
-      }
-    });
-  return result;
+    console.log(command.args);
+    return command;
+  });
 }

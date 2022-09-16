@@ -31,16 +31,12 @@ export function FlipButtons() {
     let mat = matrixScale(x, y, [bounds.width * o[0], bounds.height * o[1]]);
 
     if (useTransformStore.getState().enabled) {
+      useTransformStore.getState().updateSnapshot();
       const affineMatrix = useTransformStore.getState().affineMatrix;
-
       const bounds = useTransformStore.getState().bounds;
-
       const mat = multiply(
-        matrixScale(x, y, [
-          bounds.width * origin[0],
-          bounds.height * origin[1],
-        ]),
-        affineMatrix
+        affineMatrix,
+        matrixScale(x, y, [bounds.width * origin[0], bounds.height * origin[1]])
       );
 
       useTransformStore.getState().updateAffineMatrix(mat);
@@ -50,7 +46,25 @@ export function FlipButtons() {
         bounds,
         multiply(mat, useTransformStore.getState().perspectiveMatrix)
       );
+
+      useFontStore.getState().commitSnapshotToHistory([
+        {
+          type: "transform",
+          payload: {
+            old: useTransformStore.getState().snapshot,
+            new: {
+              affineMatrix: useTransformStore.getState().affineMatrix,
+              perspectiveMatrix: useTransformStore.getState().perspectiveMatrix,
+              bounds: useTransformStore.getState().bounds,
+            },
+          },
+        },
+      ]);
     } else {
+      useFontStore.getState().updateSnapshot({
+        ...commands,
+        ids,
+      });
       update(
         {
           ...commands,
@@ -59,6 +73,8 @@ export function FlipButtons() {
         bounds,
         mat
       );
+      useFontStore.getState().commitSnapshotToHistory();
+      useFontStore.getState().updateSnapshot();
     }
   };
   const flipY = () => {

@@ -93,8 +93,8 @@ export default function Rotate({
         onMouseDown={(event) => {
           useTransformStore.getState().updateActiveTransformHandle("rotate");
           useTransformStore.getState().updateActiveTransformPosition(position);
-
           updateSnapshot(getCommands());
+          useTransformStore.getState().updateSnapshot();
           event.evt.stopPropagation();
           event.evt.preventDefault();
           const selections = getSelections();
@@ -145,8 +145,21 @@ export default function Rotate({
             drag(proxy);
           };
           const up = () => {
+            useFontStore.getState().commitSnapshotToHistory([
+              {
+                type: "transform",
+                payload: {
+                  new: {
+                    affineMatrix: useTransformStore.getState().affineMatrix,
+                    perspectiveMatrix:
+                      useTransformStore.getState().perspectiveMatrix,
+                    bounds: useTransformStore.getState().bounds,
+                  },
+                  old: useTransformStore.getState().snapshot,
+                },
+              },
+            ]);
             updateSnapshot();
-
             useTransformStore.getState().updateActiveTransformHandle();
             useTransformStore.getState().updateActiveTransformPosition();
             document.removeEventListener("pointermove", _drag);

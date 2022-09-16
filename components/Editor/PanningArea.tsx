@@ -57,7 +57,7 @@ export default function PanningArea({ onPan, workspaceRef }: Props) {
     const parent = workspaceRef.current.parentElement;
 
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) {
+      if (e.ctrlKey || useWorkspaceStore.getState().contextMenu.active) {
         return;
       }
       e.preventDefault();
@@ -68,7 +68,7 @@ export default function PanningArea({ onPan, workspaceRef }: Props) {
         return;
       }
 
-      const SENSITIVITY = .6;
+      const SENSITIVITY = 0.6;
 
       onPan(-e.deltaX * SENSITIVITY, -e.deltaY * SENSITIVITY);
     };

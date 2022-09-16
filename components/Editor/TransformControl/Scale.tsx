@@ -57,11 +57,10 @@ export default function Scale({
     useCommandStore,
     (state) => state.selected
   );
+  
   const getCommands = useFreshSelector(useFontStore, selectCommandsTable);
 
   const updateSnapshot = useFontStore((state) => state.updateSnapshot);
-
-  const commandsTable = useMemo(() => getCommands(), []);
 
   const updatePoints = usePointsUpdate();
 
@@ -91,7 +90,7 @@ export default function Scale({
       y={y * scaleValue}
       rotation={angle}
       onMouseEnter={(e) => {
-        if (!isTransforming) { 
+        if (!isTransforming) {
           buildDirectedImage(directionAngle, "/icons/scale.png").then((img) => {
             document.body.style.cursor = `url(${img}) 15 15, auto`;
           });
@@ -105,8 +104,10 @@ export default function Scale({
       onMouseDown={(event) => {
         useTransformStore.getState().updateActiveTransformHandle(mode);
         useTransformStore.getState().updateActiveTransformPosition(position);
+        useTransformStore.getState().updateSnapshot();
 
         updateSnapshot(getCommands());
+
         event.evt.stopPropagation();
         event.evt.preventDefault();
         const selections = getSelections();
@@ -191,6 +192,21 @@ export default function Scale({
           drag(proxy);
         };
         const up = () => {
+          useFontStore.getState().commitSnapshotToHistory([
+            {
+              type: "transform",
+              payload: {
+                old: useTransformStore.getState().snapshot,
+                new: {
+                  affineMatrix: useTransformStore.getState().affineMatrix,
+                  perspectiveMatrix:
+                    useTransformStore.getState().perspectiveMatrix,
+                  bounds: useTransformStore.getState().bounds,
+                },
+              },
+            },
+          ]);
+
           updateSnapshot();
           useTransformStore.getState().updateActiveTransformHandle();
           useTransformStore.getState().updateActiveTransformPosition();
