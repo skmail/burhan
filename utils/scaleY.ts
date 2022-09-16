@@ -1,3 +1,3 @@
 export default function scaleY(value: number, baseline: number, scale: number) {
-  return baseline - value * scale;
+  return baseline + value * scale;
 }

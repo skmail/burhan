@@ -1,6 +1,7 @@
 import { Command, Font, Table, NewPoint, Ruler } from "../../types";
 import create from "zustand";
 import produce from "immer";
+import { useWorkspaceStore } from "../workspace/reducer";
 
 interface State {
   font: Font;
@@ -23,6 +24,18 @@ interface State {
   setActiveRuler: (id: string) => void;
   isActiveRulerToDelete: boolean;
   setActiveRulerToDelete: (isReady: boolean) => void;
+
+  rotate: (rotation: number, ids: string[]) => void;
+  scale: (scale: number, ids: string[]) => void;
+  skewX: (degrees: number, ids: string[]) => void;
+  skewY: (degrees: number, ids: string[]) => void;
+  translateX: (translateX: number, ids: string[]) => void;
+  translateY: (translateY: number, ids: string[]) => void;
+  reset(): void;
+
+  snapshot?: Table<Command>;
+
+  updateSnapshot(snapshot?: Table<Command>): void;
 }
 
 export const useFontStore = create<State>((set) => ({
@@ -32,10 +45,24 @@ export const useFontStore = create<State>((set) => ({
   downloadUrl: undefined,
   newPoint: undefined,
   activeRuler: "",
-  rulers: [
-  
-  ],
+  rulers: [],
   isActiveRulerToDelete: false,
+  snapshot: undefined,
+  reset: () =>
+    set(
+      produce<State>((state) => {
+        // @ts-ignore
+        state.font = undefined;
+        state.selectedGlyphId = "";
+        state.activeRuler = "";
+        state.rulers = [];
+
+        useWorkspaceStore.setState((state) => ({
+          ...state,
+          ready: false,
+        }));
+      })
+    ),
   setActiveRulerToDelete: (isReady) =>
     set(
       produce<State>((state) => {
@@ -85,6 +112,12 @@ export const useFontStore = create<State>((set) => ({
     set(
       produce<State>((state) => {
         state.downloadUrl = url;
+      })
+    ),
+  updateSnapshot: (snapshot) =>
+    set(
+      produce<State>((state) => {
+        state.snapshot = snapshot;
       })
     ),
 
@@ -182,3 +215,6 @@ export const selectCommandsTable = (state: State): Table<Command> => {
   // @ts-ignore
   return state.font.glyphs.items[state.selectedGlyphId].path.commands;
 };
+
+export const selectGlyphCommandIds = (state: State) =>
+  selectCommandsTable(state).ids;

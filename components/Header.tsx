@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import { useState } from "react";
 import shallow from "zustand/shallow";
 import useGlyphLookup from "../hooks/useGlyphLookup";
@@ -27,6 +28,9 @@ function Button({ active = false, className, ...props }: Props) {
 const codeViews = ["oct", "hex", "html", "dec", "char"] as const;
 
 export default function Header() {
+
+  const router = useRouter()
+  
   const [leftSidebar, toggleLeftSidebarSide] = useWorkspaceStore(
     (state) => [state.leftSidebar, state.toggleLeftSidebarSide],
     shallow
@@ -60,7 +64,11 @@ export default function Header() {
   return (
     <div className="h-14 bg-bg-2 flex-shrink-0 text-black justify-between items-center flex px-4 text-main border-b-2 border-outline">
       <div className="flex items-center">
-        <Button className="mr-1">
+        <Button 
+        onClick={() => {
+          router.push('/')
+        }}
+        className="mr-1">
           <svg
             className="w-8 h-8"
             viewBox="0 0 24 24"

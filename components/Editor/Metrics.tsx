@@ -77,8 +77,8 @@ export default function Metrics({
       x1: x,
       x2: x,
       color: "#A1EDFD",
-      labelX: x + 3,
-      labelY: 25,
+      labelX: x - 75,
+      labelY: 30,
       origin: height,
     },
     {
@@ -91,7 +91,7 @@ export default function Metrics({
       color: "#A1EDFD",
       labelX: x + advanceWidth * scale + 3,
 
-      labelY: 25,
+      labelY: 30,
     },
   ];
 

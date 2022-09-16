@@ -82,7 +82,9 @@ export default function useHighlightNewPoint({ x, baseline, scale }: Props) {
   const highlightNewPoint = useCallback((coords: PointTuple) => {
     const { x, baseline, scale, keys } = getProps();
     const pos: PointTuple = toGlyphPoint(coords, [x, baseline], scale);
+   
     const round = keys.ShiftLeft !== true;
+     
     const commands = getCommands();
     let lastMoveTo: Command | undefined;
 
@@ -122,6 +124,20 @@ export default function useHighlightNewPoint({ x, baseline, scale }: Props) {
               point[0],
               point[1]
             );
+
+            // console.log(
+            //   nextPoint[0],
+            //   nextPoint[1],
+
+            //   nextPoint[0] + space[0],
+            //   nextPoint[1] + space[1],
+
+            //   point[0] - space[0],
+            //   point[1] - space[1],
+
+            //   point[0],
+            //   point[1]
+            // )
           }
           break;
         case "bezierCurveTo":
@@ -180,6 +196,11 @@ export default function useHighlightNewPoint({ x, baseline, scale }: Props) {
       const result = computePointOnBezierCurve(bz, pos, round);
 
       const maxDistance = 5 / scale;
+
+      // console.log(x
+      //   result,
+        
+      // )
       
       if (result && result.distance < maxDistance) {
         setNewPoint({

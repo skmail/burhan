@@ -5,5 +5,5 @@ export default function toGlyphPoint(
   origin: PointTuple,
   scale: number
 ): PointTuple {
-  return [(point[0] - origin[0]) / scale, (origin[1] - point[1]) / scale];
+  return [(point[0] - origin[0]) / scale, (point[1] - origin[1]) / scale];
 }

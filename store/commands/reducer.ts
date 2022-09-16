@@ -8,7 +8,7 @@ interface State {
 
   hover: (id: string) => void;
   unhover: (id: string) => void;
-  select: (ids: string | string[]) => void;
+  select: (ids: string | string[], append?: boolean) => void;
   activate: (id: string) => void;
   deactivate: (id: string) => void;
 
@@ -38,19 +38,20 @@ const useCommandStore = create<State>((set) => ({
       })
     ),
 
-  select: (ids: string | string[]) =>
+  select: (ids: string | string[], append = false) =>
     set(
       produce<State>((state) => {
-        if (Array.isArray(ids)) {
-          state.selected = ids;
-        } else {
-          if (ids === "new") {
-            // state.selected = [];
-            return;
-          } else {
-            state.selected = [ids];
-          }
+        const selections: string[] = [];
+        if (append) {
+          selections.push(...state.selected);
         }
+        if (Array.isArray(ids)) {
+          selections.push(...ids);
+        } else if (ids !== "new") {
+          selections.push(ids);
+        }
+
+        state.selected = selections;
       })
     ),
 

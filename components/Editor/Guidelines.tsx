@@ -18,7 +18,7 @@ export default function Guidelines({
 }: Props) {
   const guidelines = useWorkspaceStore((state) => state.guidelines, shallow);
   const toCanvasPoint = (_x: number, _y: number) => {
-    return [x + _x * scale, baseline - _y * scale];
+    return [x + _x * scale, baseline + _y * scale];
   };
 
   return (

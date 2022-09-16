@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
+import shallow from "zustand/shallow";
 import useFresh from "../hooks/useFresh";
 import { useFontStore } from "../store/font/reducer";
-import { Font } from "../types";
-import toOpentype from "../utils/toOpentype";
 import { FontGeneratorWorker } from "../workers/font-generator";
-import Button from "./Button";
 
 export default function ToOpenType({ selected }: { selected: string }) {
   const [testData, setTestData] = useState<string>();
   const [isChanged, setIsChanged] = useState(false);
-  const [fontUrl, setFontUrl] = useState("");
   const [isLoding, setIsLoading] = useState(false);
   const font = useFontStore((state) => state.font);
-  const setDownloadUrl = useFontStore((state) => state.setDownloadUrl);
+  const [downloadUrl, setDownloadUrl] = useFontStore(
+    (state) => [state.downloadUrl, state.setDownloadUrl],
+    shallow
+  );
 
   const worker = useRef<FontGeneratorWorker>();
 
@@ -20,7 +20,6 @@ export default function ToOpenType({ selected }: { selected: string }) {
     worker.current = new FontGeneratorWorker();
     worker.current.on("done", (message) => {
       if (message.type === "done") {
-        setFontUrl(message.url);
         setIsLoading(false);
         setDownloadUrl(message.url);
       }
@@ -66,7 +65,7 @@ export default function ToOpenType({ selected }: { selected: string }) {
       <>
         <style
           dangerouslySetInnerHTML={{
-            __html: `@font-face {font-family: "XXX";src: url("${fontUrl}") format("opentype");}`,
+            __html: `@font-face {font-family: "XXX";src: url("${downloadUrl}") format("opentype");}`,
           }}
         ></style>
 
@@ -92,7 +91,7 @@ export default function ToOpenType({ selected }: { selected: string }) {
               setTestData(e.target.value);
             }}
             placeholder="Test your data here"
-            className="h-24 text-2xl ring focus:outline-none ring-outline rounded-lg p-2 w-64 bg-white pt-9 "
+            className="select-none h-24 text-2xl ring focus:outline-none ring-outline rounded-lg p-2 w-64 bg-white pt-9 "
           ></textarea>
         </div>
       </>

@@ -1,13 +1,9 @@
-import svgPath from "svgpath";
 import { Command, Table } from "../types";
-import commandsToPathData from "./commandsToPathData";
 
-export default function computCommandsBounds(commands: Table<Command>) {
-  let result: Command[] = [];
-  const path = svgPath(
-    commandsToPathData(commands.ids.map((id) => commands.items[id]))
-  );
-
+export default function computCommandsBounds(
+  commands: Table<Command>,
+  scale = 1
+) {
   const bounds = {
     minX: Infinity,
     minY: Infinity,
@@ -16,20 +12,22 @@ export default function computCommandsBounds(commands: Table<Command>) {
     height: 0,
     width: 0,
   };
-  path.iterate((segment) => {
-    const [command, ...points] = segment;
-    let pts = points;
-    for (var j = 0; j < points.length; j += 2) {
-      if (pts[j + 0] < bounds.minX) bounds.minX = pts[j + 0];
-      if (pts[j + 1] < bounds.minY) bounds.minY = pts[j + 1];
-      if (pts[j + 0] > bounds.maxX) bounds.maxX = pts[j + 0];
-      if (pts[j + 1] > bounds.maxY) bounds.maxY = pts[j + 1];
-    }
-  });
 
+  for (let id of commands.ids) {
+    const command = commands.items[id];
+    if (!command.args.length) {
+      continue;
+    }
+    bounds.minX = Math.min(command.args[0], bounds.minX);
+    bounds.minY = Math.min(command.args[1], bounds.minY);
+    bounds.maxX = Math.max(command.args[0], bounds.maxX);
+    bounds.maxY = Math.max(command.args[1], bounds.maxY);
+  }
   return {
     ...bounds,
-    width: bounds.maxX - bounds.minX,
-    height: bounds.maxY - bounds.minY,
+    width: (bounds.maxX - bounds.minX) * scale,
+    height: (bounds.maxY - bounds.minY) * scale,
+    x: bounds.minX * scale,
+    y: bounds.minY * scale,
   };
 }

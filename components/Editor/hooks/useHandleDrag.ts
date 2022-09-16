@@ -78,6 +78,7 @@ export default function useHandleDrag({
     const commands = cacheCommands.current;
     const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
 
+    console.log(useCommandStore.getState().selected);
     const selections = getSelectedHandleIds().reduce((acc, id) => {
       if (acc.includes(id) || !commands.items[id]) {
         return acc;
@@ -99,7 +100,7 @@ export default function useHandleDrag({
     const command = commands.items[handle.id];
     let xy: PointTuple = [
       command.args[0] + amountToMove[0],
-      command.args[1] + amountToMove[1],
+      command.args[1] - amountToMove[1],
     ];
 
     let snapped: SnapResult = {
@@ -121,8 +122,6 @@ export default function useHandleDrag({
               : [0, ruler.position],
         });
       }
-
-      console.log(snapPoints);
 
       for (let id of commands.ids) {
         if (selections.includes(id)) {
@@ -174,15 +173,15 @@ export default function useHandleDrag({
       } else {
         args = [
           cmd.args[0] + amountToMove[0] + snapDiff[0],
-          cmd.args[1] + amountToMove[1] + snapDiff[1],
+          cmd.args[1] - amountToMove[1] + snapDiff[1],
         ];
       }
-
-      acc[id] = {
-        ...cmd,
-        args,
-      };
-
+      if (cmd.command !== "closePath") {
+        acc[id] = {
+          ...cmd,
+          args,
+        };
+      }
       const getPoint = (
         index1: number,
         index2: number,

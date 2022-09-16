@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
+import { RefObject, useEffect, useRef } from "react";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
 import onLeftButton from "../../utils/onLeftButton";
 
 interface Props {
   onPan: (x: number, y: number) => void;
+  workspaceRef: RefObject<HTMLElement>;
 }
-export default function PanningArea({ onPan }: Props) {
+export default function PanningArea({ onPan, workspaceRef }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const isPanning = useWorkspaceStore((state) => state.keyboard.Space === true);
 
@@ -48,6 +49,36 @@ export default function PanningArea({ onPan }: Props) {
       element.removeEventListener("mouseup", onMouseUp);
     };
   }, [isPanning]);
+
+  useEffect(() => {
+    if (!workspaceRef.current || !workspaceRef.current.parentElement) {
+      return;
+    }
+    const parent = workspaceRef.current.parentElement;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+
+      const element = workspaceRef.current;
+      if (!element) {
+        return;
+      }
+
+      const SENSITIVITY = .6;
+
+      onPan(-e.deltaX * SENSITIVITY, -e.deltaY * SENSITIVITY);
+    };
+
+    parent.addEventListener("wheel", onWheel);
+
+    return () => {
+      parent.removeEventListener("wheel", onWheel);
+    };
+  }, []);
 
   if (!isPanning) {
     return null;

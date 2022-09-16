@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@free-transform/core": "^1.0.3",
     "@headlessui/react": "^1.6.6",
     "@heroicons/react": "^1.0.6",
     "@reduxjs/toolkit": "^1.8.3",

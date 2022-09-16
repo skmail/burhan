@@ -5,5 +5,5 @@ export default function toScreenPoint(
   origin: PointTuple,
   scale: number
 ) {
-  return [origin[0] + point[0] * scale, origin[1] - point[1] * scale];
+  return [origin[0] + point[0] * scale, origin[1] + point[1] * scale];
 }

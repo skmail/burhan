@@ -6,5 +6,6 @@ export default async function loadFont({ queryKey }: any) {
   if (!font) {
     throw new Error("font not found");
   }
+  
   return font;
 }

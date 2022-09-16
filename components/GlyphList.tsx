@@ -29,7 +29,7 @@ export default function GlyphList({ font, glyphs, selected }: Props) {
   }, [glyphs.ids, searchKeyword]);
 
   return (
-    <div className="w-[240px] overflow-hidden flex flex-col h-screen shadow-xl p-2 border-r-2 border-outline">
+    <div className="w-[240px] overflow-hidden flex flex-col h-full shadow-xl p-2 border-r-2 border-outline">
       <div className="text-main font-medium mb-4">Glyphs</div>
       <div className="relative mb-4">
         <input

@@ -7,25 +7,40 @@ export default function KeyboardEventsProvider({
 }: PropsWithChildren<JSX.IntrinsicElements["div"]>) {
   const ref = useRef<HTMLDivElement>(null);
 
-  const [needFocusOnMouseEnter, setNeedFocusOnMouseEnter] = useState(true);
-
   const keyboard = useWorkspaceStore((state) => ({
     setKeyboardKeys: state.setKeyboardKeys,
     resetKeyboardKeys: state.resetKeyboardKeys,
   }));
-  
+
   useEffect(() => {
     if (!ref.current) {
       return;
     }
     const element = ref.current;
+    const shouldDetectKeys = (event: KeyboardEvent) => {
+      const target = String(
+        (event.target as HTMLElement).tagName
+      ).toLowerCase();
+      return ["textarea", "input", "button"].includes(target) === false;
+    };
     const onKeyDown = (e: KeyboardEvent) => {
+      if (!shouldDetectKeys(e)) {
+        return;
+      }
       keyboard.setKeyboardKeys({
         [e.code]: true,
       });
+      // e.preventDefault();
+      // e.stopPropagation();
+      // console.log(e.code);
     };
-
+    
     const onKeyUp = (e: KeyboardEvent) => {
+      if (!shouldDetectKeys(e)) {
+        return;
+      }
+      // e.stopPropagation();
+      // e.preventDefault();
       keyboard.setKeyboardKeys({
         [e.code]: false,
       });
@@ -33,7 +48,6 @@ export default function KeyboardEventsProvider({
 
     const onBlur = () => {
       keyboard.resetKeyboardKeys();
-      setNeedFocusOnMouseEnter(true);
     };
 
     element.addEventListener("keydown", onKeyDown);
@@ -46,25 +60,6 @@ export default function KeyboardEventsProvider({
       element.removeEventListener("blur", onBlur);
     };
   }, []);
-
-  useEffect(() => {
-    if (!ref.current || !needFocusOnMouseEnter) {
-      return;
-    }
-
-    const element = ref.current;
-
-    const onMouse = () => {
-      element.focus();
-      setNeedFocusOnMouseEnter(false);
-    };
-
-    element.addEventListener("mousemove", onMouse);
-
-    return () => {
-      element.removeEventListener("mousemove", onMouse);
-    };
-  }, [needFocusOnMouseEnter]);
 
   return (
     <div {...props} tabIndex={4} ref={ref}>

@@ -29,6 +29,8 @@ import Header from "../../components/Header";
 import DownloadSvgButton from "../../components/Editor/DownloadSvgButton";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
 import useFreshSelector from "../../hooks/useFreshSelector";
+import NodeTransform from "../../components/Editor/NodeTransform";
+import { FlipButtons } from "../../components/Editor/FlipButtons";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -41,6 +43,15 @@ const App: NextPage = () => {
       selectedGlyphId: state.selectedGlyphId,
     }),
     shallow
+  );
+
+  const resetFont = useFontStore((state) => state.reset);
+
+  useEffect(
+    () => () => {
+      resetFont();
+    },
+    []
   );
 
   const fontId = `${router.query.id}`;
@@ -62,7 +73,6 @@ const App: NextPage = () => {
   useEffect(() => {
     if (query.data) {
       fontState.setFont(query.data);
-
       setReady();
     }
   }, [query.data]);
@@ -309,7 +319,7 @@ const App: NextPage = () => {
   const glyph = glyphs.items[selected];
 
   return (
-    <div className="h-screen flex flex-col bg-white  overflow-hidden">
+    <div className="h-screen flex flex-col bg-white  overflow-hidden select-none">
       <Header />
 
       <div className="flex flex-1 h-full overflow-hidden">
@@ -410,7 +420,6 @@ const App: NextPage = () => {
                 active={settings.viewMode === "outline"}
                 roundedB={false}
                 onClick={() => setViewMode("outline")}
-                name="outline"
               >
                 <svg
                   className="w-6 h-6"
@@ -450,14 +459,9 @@ const App: NextPage = () => {
                   />
                 </svg>
               </Button>
+              <NodeTransform />
             </div>
-            <Editor
-              history={history}
-              settings={settings}
-              onCommandsAdd={onCommandsAdd}
-              onSelectHandles={onSelectHandles}
-              selectedHandles={selectedHandles}
-            />
+            <Editor history={history} settings={settings} />
           </KeyboardEventsProvider>
         )}
 
@@ -533,6 +537,7 @@ const App: NextPage = () => {
               </select>
             </div>
 
+            <FlipButtons />
             {!!glyph && (
               <GlyphInfo
                 onFitWidth={() => {
@@ -564,8 +569,6 @@ const App: NextPage = () => {
             <FontInfo font={font} />
           </div>
         )}
-
-        {/* <ImageTest /> */}
       </div>
     </div>
   );

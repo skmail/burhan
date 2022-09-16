@@ -9,8 +9,9 @@ interface Props {
   x: number;
   baseline: number;
   scale: number;
+  zoom: number;
 }
-export default function NewInputHandle({ x, baseline, scale }: Props) {
+export default function NewInputHandle({ x, baseline, scale, zoom }: Props) {
   const newPoint = useFontStore((state) => state.newPoint, shallow);
   const setNewPoint = useFontStore((state) => state.setNewPoint);
   const insertPoint = useInsertPoint();
@@ -18,9 +19,10 @@ export default function NewInputHandle({ x, baseline, scale }: Props) {
     activate: state.activate,
     hover: state.hover,
     select: state.select,
-  }));
+  }), shallow);
 
   const [getNewPoint] = useFresh(newPoint);
+
   if (!newPoint) {
     return null;
   }
@@ -28,13 +30,12 @@ export default function NewInputHandle({ x, baseline, scale }: Props) {
   return (
     <>
       <Handle
+        zoom={zoom}
         id="new"
         scale={scale}
         baseline={baseline}
         x={x}
-        onDrag={(e) => {
-          console.log("drag", e);
-        }}
+        onDrag={(e) => {}}
         onDragEnd={() => {}}
         onActivate={() => {
           const newPoint = getNewPoint();
@@ -48,23 +49,14 @@ export default function NewInputHandle({ x, baseline, scale }: Props) {
             return;
           }
 
+        
           states.select(id);
-
-          states.activate(id);
           states.hover(id);
+          states.activate(id);
 
           setNewPoint();
         }}
       />
-      {/* 
-              <Text
-                fontSize={11}
-                text={`[${newPoint.index}] ${Math.round(
-                  newPoint.point.x
-                )},${Math.round(newPoint.point.y)} `}
-                x={newPoint.point.x}
-                y={newPoint.point.y - 14}
-              ></Text> */}
     </>
   );
 }

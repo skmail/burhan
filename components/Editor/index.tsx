@@ -1,38 +1,24 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Command,
-  Font,
-  PointTuple,
-  Settings,
-  Guideline as GuidelineType,
-  OnCommandsAdd,
-} from "../../types";
-import { Stage, Layer, Path, Group, Rect } from "react-konva";
-import commandsToPath from "../../utils/commandsToPathData";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { PointTuple, Settings } from "../../types";
+import { Stage, Layer, Group, Rect } from "react-konva";
 import Metrics from "./Metrics";
 import Handles from "./Handles";
 import PanningArea from "./PanningArea";
-import Guideline from "./Guideline";
 import Button from "../Button";
 import SelectionArea from "./SelectionArea";
 import Grid from "./Grid";
 import { HistoryManager } from "../../types/History";
-import useFresh from "../../hooks/useFresh";
 import useHandleDrag from "./hooks/useHandleDrag";
-import useDrawingPen from "./hooks/useDrawingPen";
-import useBounnds from "./hooks/useBounds";
+import useBounds from "./hooks/useBounds";
 import useZoom from "./hooks/useZoom";
 
 import useHighlightNewPoint from "./hooks/useHighlightNewPoint";
-import Handle from "./Handle";
-import useInsertPoint from "./hooks/useInsertPoint";
 
 import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
 import useKeyboardMove from "./hooks/useKeyboardMove";
 import useDeletePoints from "./hooks/useDeletePoints";
 
 import Ruler from "./Ruler";
-import { useWorkspaceStore } from "../../store/workspace/reducer";
 import shallow from "zustand/shallow";
 import NewInputHandle from "./NewPointHandle";
 import useCommandStore from "../../store/commands/reducer";
@@ -40,25 +26,44 @@ import Guidelines from "./Guidelines";
 import DrawingLayer from "./DrawingLayer";
 import RulerLines from "./RulerLines";
 import { SceneContext } from "konva/lib/Context";
+import TransformControl from "./TransformControl";
+import SelectAll from "./SelectAll";
+import EnableControlTransform from "./EnableControlTransform";
+import { SnapshotPath } from "./SnapshotPath";
+import { Path } from "./Path";
 
 interface Props {
-  selectedHandles: string[];
-  onSelectHandles: (ids: string[]) => void;
   settings: Settings;
   history: HistoryManager;
-  onCommandsAdd: OnCommandsAdd;
 }
-function Editor({
-  selectedHandles,
-  onSelectHandles,
-  settings,
-  history,
-  onCommandsAdd,
-}: Props) {
+function Editor({ settings, history }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const bounds = useBounnds(ref);
+  const bounds = useBounds(ref);
 
   const [pan, setPan] = useState<PointTuple>([0, 0]);
+
+  const { glyph, ...font } = useFontStore(
+    (state) => ({
+      ascent: state.font.ascent,
+      descent: state.font.descent,
+      xHeight: state.font.xHeight,
+      capHeight: state.font.capHeight,
+      glyph: state.font.glyphs.items[state.selectedGlyphId],
+    }),
+    shallow
+  );
+
+  const width = bounds.width;
+  const height = bounds.height;
+
+  const scaleWithoutZoom =
+    (1 / Math.max(font.ascent - font.descent, glyph.bbox.width)) *
+    (Math.min(height, width) - 120);
+
+  let x = width / 2 - (glyph.advanceWidth / 2) * scaleWithoutZoom;
+
+  let baseline =
+    height / 2 + ((font.ascent + font.descent) / 2) * scaleWithoutZoom;
 
   const {
     zoom,
@@ -70,28 +75,22 @@ function Editor({
     pan,
   });
 
-  const font = useFontStore((state) => state.font);
-  const glyph = useFontStore(
-    (state) => state.font?.glyphs.items[state.selectedGlyphId]
-  );
-  const width = bounds.width;
-  const height = bounds.height;
+  x *= zoom;
+  x += pan[0];
 
-  const scaleWithoutZoom =
-    (1 / Math.max(font.ascent - font.descent, glyph.bbox.width)) *
-    (Math.min(height, width) - 120);
+  baseline *= zoom;
+  baseline += pan[1];
 
   const scale = scaleWithoutZoom * zoom;
 
-  const x = width / 2 + pan[0] - (glyph.advanceWidth / 2) * scale;
+  const resetWorkspaceView = useCallback(() => {
+    setPan([0, 0]);
+    resetZoom();
+  }, []);
 
-  const baseline =
-    height / 2 + pan[1] + ((font.ascent + font.descent) / 2) * scale;
-
-  const data = useFontStore((state) => {
-    const commands = selectCommandsTable(state);
-    return commandsToPath(commands.ids.map((id) => commands.items[id]));
-  });
+  useEffect(() => {
+    resetWorkspaceView();
+  }, [glyph.id]);
 
   const points: any[] = [
     {
@@ -131,22 +130,6 @@ function Editor({
     },
   ];
 
-  const [getFreshCommands] = useFresh(glyph.path.commands);
-
-  const keys = useWorkspaceStore((state) => state.keyboard, shallow);
-
-  const onHandleSelected = useCallback(
-    (id: string) => {
-      if (keys.ShiftLeft && !selectedHandles.includes(id)) {
-        onSelectHandles([...selectedHandles, id]);
-      } else if (selectedHandles.includes(id)) {
-        onSelectHandles(selectedHandles.filter((i) => i !== id));
-      } else {
-        onSelectHandles([id]);
-      }
-    },
-    [selectedHandles, keys.ShiftLeft]
-  );
   useDeletePoints();
 
   const { onDrag, onDragEnd, isDragging, setIsDragging } = useHandleDrag({
@@ -199,15 +182,10 @@ function Editor({
         <div className="absolute right-full bottom-0 text-xs mr-2 py-1 px-1 bg-black bg-opacity-80 text-white rounded-md">
           {Math.round(zoom * 100)}%
         </div>
-
+        <SelectAll />
+        <EnableControlTransform />
         {shouldResetZoom && (
-          <Button
-            onClick={() => {
-              setPan([0, 0]);
-              resetZoom();
-            }}
-            roundedB={false}
-          >
+          <Button onClick={resetWorkspaceView} roundedB={false}>
             <svg
               className="w-7"
               viewBox="0 0 24 24"
@@ -262,25 +240,18 @@ function Editor({
         </Button>
       </div>
       <PanningArea
+        workspaceRef={ref}
         onPan={(x, y) => {
           setPan((pan) => [pan[0] + x, pan[1] + y]);
         }}
       />
-      <SelectionArea
-        workspaceRef={ref}
-        x={x}
-        baseline={baseline}
-        scale={scale}
-      />
+
       <Grid
         size={settings.gridSize}
         zoom={zoom}
         width={width}
         height={height}
-        pan={[
-          x,
-          height / 2 + pan[1] + ((font.ascent + font.descent) / 2) * scale,
-        ]}
+        pan={[x, baseline]}
       />
 
       <DrawingLayer
@@ -320,17 +291,12 @@ function Editor({
             advanceWidth={glyph.advanceWidth}
           />
           <Group clipFunc={clipFunction}>
+            <SnapshotPath x={x} y={baseline} scale={scale} />
             <Path
+              viewMode={settings.viewMode}
               x={x}
               y={baseline}
-              data={data}
-              scaleX={scale}
-              scaleY={-scale}
-              strokeWidth={
-                settings.viewMode === "outline" ? 2 / (scale || 0.1) : 0
-              }
-              stroke="#3b82f6"
-              fill={settings.viewMode !== "outline" ? "#3b82f6" : undefined}
+              scale={scale}
             />
           </Group>
           <Ruler
@@ -369,7 +335,12 @@ function Editor({
             height={height}
           />
           <Group clipFunc={clipFunction}>
-            <NewInputHandle scale={scale} x={x} baseline={baseline} />
+            <NewInputHandle
+              zoom={zoom}
+              scale={scale}
+              x={x}
+              baseline={baseline}
+            />
 
             <Handles
               scale={scale}
@@ -378,10 +349,24 @@ function Editor({
               onDrag={onDrag}
               onDragEnd={onDragEnd}
               ids={ids}
+              zoom={zoom}
             />
           </Group>
+          <TransformControl
+            scale={scale}
+            workspaceRef={ref}
+            baseline={baseline}
+            initialX={x}
+            offset={[bounds.x, bounds.y]}
+          />
         </Layer>
       </Stage>
+      <SelectionArea
+        workspaceRef={ref}
+        x={x}
+        baseline={baseline}
+        scale={scale}
+      />
     </div>
   );
 }

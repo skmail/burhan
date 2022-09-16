@@ -19,6 +19,7 @@ import useCommandStore from "../../store/commands/reducer";
 import shallow from "zustand/shallow";
 import useFreshSelector from "../../hooks/useFreshSelector";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
+import { clamp } from "@free-transform/core";
 
 interface Props {
   id: string;
@@ -27,6 +28,7 @@ interface Props {
   baseline: number;
   x: number;
   scale: number;
+  zoom: number;
   onActivate?: OnHandleActivate;
 }
 
@@ -40,6 +42,7 @@ export default function Handle({
   scale,
   x,
   onActivate = noob,
+  zoom,
 }: Props) {
   const states = useCommandStore(
     (state) => ({
@@ -108,6 +111,7 @@ export default function Handle({
     if (!states.isActive) {
       return;
     }
+
     const onMouseMove = (e: MouseEvent) => {
       if (!handle) {
         return;
@@ -237,11 +241,11 @@ export default function Handle({
       : states.isHovered
       ? "#3b82f6"
       : handle.command === "moveTo"
-      ? "red"
+      ? "#4D7FEE"
       : "#4D7FEE",
-    strokeWidth: states.isHovered ? 2 : 1.5,
+    strokeWidth: states.isHovered ? 2 : clamp(1 * zoom, 0.3, 1.2),
     x: x + handle.args[0] * scale,
-    y: baseline - handle.args[1] * scale,
+    y: baseline + handle.args[1] * scale,
     fill: states.isSelected ? "#3b82f6" : "white",
 
     onMouseDown,
@@ -252,18 +256,17 @@ export default function Handle({
     return null;
   }
 
-
   return (
     <>
       {lines.map((line, index) => (
         <Line key={index} points={line} strokeWidth={1} stroke={"#C4CBD7"} />
       ))}
-      {!isControlPoint && <Circle {...props} radius={4} />}
+      {!isControlPoint && <Circle {...props} radius={clamp(4 * zoom, 2, 4)} />}
       {isControlPoint && (
         <Rect
           {...props}
-          width={6}
-          height={6}
+          width={clamp(6 * zoom, 2, 6)}
+          height={clamp(6 * zoom, 2, 6)}
           y={props.y - 3}
           x={props.x}
           rotation={45}

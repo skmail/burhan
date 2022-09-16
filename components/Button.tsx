@@ -1,6 +1,6 @@
-import { memo } from "react";
+import { forwardRef, memo, RefObject } from "react";
 
-type ButtonProps = JSX.IntrinsicElements["button"];
+type ButtonProps = JSX.IntrinsicElements["div"];
 interface Props extends ButtonProps {
   variant?: "secondary" | "primary";
   roundedR?: boolean;
@@ -8,31 +8,47 @@ interface Props extends ButtonProps {
   roundedB?: boolean;
   roundedT?: boolean;
   active?: boolean;
+  disabled?: boolean;
 }
-export default memo(function Button({
-  variant = "primary",
-  className,
-  roundedR = true,
-  roundedL = true,
-  roundedT = true,
-  roundedB = true,
-  active = false,
-  ...props
-}: Props) {
+export default forwardRef<HTMLDivElement, Props>(function Button(
+  {
+    variant = "primary",
+    className,
+    roundedR = true,
+    roundedL = true,
+    roundedT = true,
+    roundedB = true,
+    active = false,
+    disabled,
+    ...props
+  },
+  ref?
+) {
   let cls = "";
 
   if (variant === "primary") {
-    cls = "ring-[1.5px]  text-main  shadow disabled:text-opacity-20 ";
+    cls = "ring-[1.5px]  text-main  shadow ";
+    if (disabled) {
+      cls += "text-opacity-20";
+    }
 
     if (active) {
       cls += "text-active-2  bg-active-1 ring-active-2 z-20 ";
     } else {
-      cls +=
-        " bg-bg-2 text-icon enabled:hover:ring enabled:hover:ring-gray-300 ring-outline";
+      cls += " bg-bg-2 text-icon ring-outline";
+      if (!disabled) {
+        cls += " hover:ring hover:ring-gray-300";
+      }
     }
+    
   } else {
-    cls =
-      "bg-blue-500 disabled:opacity-50 text-white enabled:hover:ring enabled:hover:ring-gray-300 shadow ";
+    cls = " bg-blue-500  text-white shadow ";
+
+    if (!disabled) {
+      cls += " hover:ring hover:ring-gray-300";
+    } else {
+      cls += "opacity-50";
+    }
   }
 
   if (roundedR === false) {
@@ -48,9 +64,13 @@ export default memo(function Button({
     cls += " rounded-b-none";
   }
 
+  if (!disabled && !active) {
+    cls += " cursor-pointer";
+  }
   return (
-    <button
+    <div
       {...props}
+      ref={ref}
       className={`h-8 rounded flex items-center justify-center hover:z-10 ${className} ${cls}`}
     />
   );

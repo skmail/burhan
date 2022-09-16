@@ -19,19 +19,18 @@ export default function useBounnds(workspaceRef: RefObject<HTMLDivElement>) {
     }
     const parent = workspaceRef.current.parentElement;
 
-    setBounds((bounds) => ({
-      ...bounds,
-      width: parent.offsetWidth,
-      height: parent.offsetHeight,
-    }));
-
     const onResize = () => {
+      const b = parent.getBoundingClientRect();
       setBounds((bounds) => ({
         ...bounds,
         width: parent.offsetWidth,
         height: parent.offsetHeight,
+        x: b.x,
+        y: b.y,
       }));
     };
+
+    onResize();
 
     window.addEventListener("resize", onResize);
 

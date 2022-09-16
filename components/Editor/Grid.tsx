@@ -1,3 +1,4 @@
+import { clamp } from "@free-transform/core";
 import { PointTuple } from "../../types";
 
 interface Props {
@@ -7,11 +8,9 @@ interface Props {
   zoom: number;
   size: number;
 }
-export default function Grid({ size, width, height, pan, zoom = 1 }: Props) {
+export default function Grid({ size, pan, zoom = 1 }: Props) {
   size = size * zoom;
-
-  const translateX = pan[0];
-  const translateY = pan[1];
+ 
 
   return (
     <svg
@@ -31,7 +30,7 @@ export default function Grid({ size, width, height, pan, zoom = 1 }: Props) {
             id="pattern-circle"
             cx={size / 2}
             cy={size / 2}
-            r={1 * zoom}
+            r={Math.min(1 * zoom, 4)}
             fill="currentColor"
           ></circle>
         </pattern>
@@ -40,11 +39,14 @@ export default function Grid({ size, width, height, pan, zoom = 1 }: Props) {
           width={size}
           height={size}
           patternUnits="userSpaceOnUse"
-          patternTransform={`translate(${translateX}, ${translateY})`}
+          patternTransform={`translate(${pan[0]}, ${pan[1]})`}
         >
-          <rect 
-          transform={`translate(${-size/2}, ${size/-2})`}
-          width={size * 4} height={size * 4} fill="url(#smallGrid)" />
+          <rect
+            transform={`translate(${-size / 2}, ${size / -2})`}
+            width={size * 4}
+            height={size * 4}
+            fill="url(#smallGrid)"
+          />
         </pattern>
       </defs>
 

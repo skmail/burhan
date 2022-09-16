@@ -1,6 +1,7 @@
 import create from "zustand";
 import produce from "immer";
-import { Guideline } from "../../types";
+import { Guideline, Vector } from "../../types";
+import vector from "../../utils/vector";
 type DrawingStep = "point" | "line" | "curve" | "end";
 
 interface State {
@@ -33,7 +34,11 @@ export const useWorkspaceStore = create<State>((set) => ({
     enabled: false,
     step: "point",
   },
-
+  transformControls: {
+    origin: vector(0, 0),
+    angle: 0,
+    enabled: false,
+  },
   setDrawingStep: (step: State["drawing"]["step"]) =>
     set(
       produce<State>((state) => {

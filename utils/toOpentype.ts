@@ -1,8 +1,33 @@
+import { applyToPoint, Matrix, Point } from "@free-transform/core";
 import opentype from "opentype.js";
 import { Font } from "../types";
 
+const flipY = (point: Point) => {
+  if (!point.length) {
+    return point;
+  }
+  const flipY = ():Matrix => [
+    [1, 0, 0, 0],
+    [0, -1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1],
+  ];
+
+  const p = applyToPoint(flipY(), point);
+  return [ 
+    Number(String(p[0].toFixed(2))),
+    Number(String(p[1].toFixed(2))),
+  ];
+};
 export default function toOpentype(font: Font) {
-  const glyphs: opentype.Glyph[] = [];
+  const glyphs: opentype.Glyph[] = [
+    new opentype.Glyph({
+      name: ".notdef",
+      unicode: 0,
+      advanceWidth: 650,
+      path: new opentype.Path(),
+    }),
+  ];
 
   for (let id of font.glyphs.ids) {
     const glyph = font.glyphs.items[id];
@@ -15,7 +40,11 @@ export default function toOpentype(font: Font) {
     }
     while (commandIds.length > 0) {
       const id = commandIds.shift() as string;
-      const command = glyph.path.commands.items[id];
+      const command = {
+        ...glyph.path.commands.items[id],
+        args: flipY(glyph.path.commands.items[id].args),
+      };
+ 
       switch (command.command) {
         case "moveTo":
           path.moveTo(command.args[0], command.args[1]);
@@ -31,9 +60,16 @@ export default function toOpentype(font: Font) {
           const cp2Id = commandIds.shift() as string;
           const pointId = commandIds.shift() as string;
 
-          const cp2 = glyph.path.commands.items[cp2Id];
-          const point = glyph.path.commands.items[pointId];
+          const cp2 = {
+            ...glyph.path.commands.items[cp2Id],
+            args: flipY(glyph.path.commands.items[cp2Id].args),
+          };
+          const point = {
+            ...glyph.path.commands.items[pointId],
+            args: flipY(glyph.path.commands.items[pointId].args),
+          };
 
+    
           path.bezierCurveTo(
             command.args[0],
             command.args[1],
@@ -58,13 +94,6 @@ export default function toOpentype(font: Font) {
 
     glyphs.push(opentypeGlyph);
   }
-
-  // const notdefGlyph = new opentype.Glyph({
-  //   name: ".notdef",
-  //   unicode: 0,
-  //   advanceWidth: 650,
-  //   path: new opentype.Path(),
-  // });
 
   // const aPath = new opentype.Path();
   // aPath.moveTo(100, 0);
@@ -93,8 +122,6 @@ export default function toOpentype(font: Font) {
   const blob = new Blob([dataView], { type: "font/opentype" });
 
   const url = globalThis.URL.createObjectURL(blob);
-
-  // openTypeFont.download()
-
+  
   return url;
 }

@@ -1,4 +1,4 @@
-interface Box {
+export interface Box {
   minX: number;
   minY: number;
   maxX: number;
@@ -35,7 +35,16 @@ export interface Bounds {
   y: number;
 }
 
-export type Command = {
+export type Transform = {
+  translateX?: number;
+  translateY?: number;
+  rotation?: number;
+  scale?: number;
+  skewX?: number;
+  skewY?: number;
+};
+
+export interface Command {
   command:
     | "moveTo"
     | "lineTo"
@@ -47,7 +56,7 @@ export type Command = {
     | "closePath";
   args: PointTuple;
   id: string;
-};
+}
 
 export interface Path {
   commands: Table<Command>;
@@ -129,3 +138,7 @@ export interface Ruler {
   position: number;
   direction: "vertical" | "horizontal";
 }
+
+export type TransformDirection = "n" | "ne" | "e" | "se" | "s" | "sw" | "w" | "nw";
+
+export type TransformHandle = "warp" | "rotate" | "scale";

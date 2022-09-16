@@ -37,8 +37,14 @@ export default function SelectionArea({
     useWorkspaceStore,
     (state: any) => state.drawing.enabled
   );
-  const getActiveRuler = useFreshSelector(useFontStore, state => state.activeRuler)
-
+  const getActiveRuler = useFreshSelector(
+    useFontStore,
+    (state) => state.activeRuler
+  );
+  const getKeyboard = useFreshSelector(
+    useWorkspaceStore,
+    (state) => state.keyboard
+  );
   useEffect(() => {
     if (!workspaceRef.current) {
       return;
@@ -56,7 +62,9 @@ export default function SelectionArea({
       if (!workspaceRef.current) {
         return;
       }
-      select([]);
+      if (!getKeyboard().ShiftLeft) {
+        select([]);
+      }
       box = workspaceRef.current.getBoundingClientRect();
       startX = e.clientX;
       startY = e.clientY;
@@ -107,7 +115,7 @@ export default function SelectionArea({
         x: position.x,
         y: position.y,
       });
-      select(found);
+      select(found, getKeyboard().ShiftLeft);
     };
     const onMouseUp = () => {
       setBounds({
