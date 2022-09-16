@@ -31,6 +31,7 @@ import SelectAll from "./SelectAll";
 import EnableControlTransform from "./EnableControlTransform";
 import { SnapshotPath } from "./SnapshotPath";
 import { Path } from "./Path";
+import { useTransformStore } from "../../store/transform";
 
 interface Props {
   settings: Settings;
@@ -57,13 +58,13 @@ function Editor({ settings, history }: Props) {
   const height = bounds.height;
 
   const scaleWithoutZoom =
-    (1 / Math.max(font.ascent - font.descent, glyph.bbox.width)) *
+    (1 / Math.max(Math.abs(font.ascent - font.descent), glyph.bbox.width)) *
     (Math.min(height, width) - 120);
 
   let x = width / 2 - (glyph.advanceWidth / 2) * scaleWithoutZoom;
 
   let baseline =
-    height / 2 + ((font.ascent + font.descent) / 2) * scaleWithoutZoom;
+    height / 2 - ((font.ascent + font.descent) / 2) * scaleWithoutZoom;
 
   const {
     zoom,
@@ -267,7 +268,12 @@ function Editor({ settings, history }: Props) {
             resetNewPoint();
             return;
           }
-          if (!ref.current || isDragging || isHandleHovered) {
+          if (
+            !ref.current ||
+            isDragging ||
+            isHandleHovered ||
+            useTransformStore.getState().enabled
+          ) {
             return;
           }
 

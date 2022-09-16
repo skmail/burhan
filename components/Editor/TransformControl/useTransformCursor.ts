@@ -45,7 +45,7 @@ export function useTransformCursor() {
     buildDirectedImage(cursor.rotation, `/icons/${cursor.handle}.png`).then(
       (image) => {
         if (cursor.handle === "rotate") {
-          document.body.style.cursor = `url(${image}) 10 25, auto`;
+          document.body.style.cursor = `url(${image}) 20 25, auto`;
         } else {
           document.body.style.cursor = `url(${image}) 15 15, auto`;
         }

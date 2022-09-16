@@ -261,7 +261,7 @@ export default function Handle({
       {lines.map((line, index) => (
         <Line key={index} points={line} strokeWidth={1} stroke={"#C4CBD7"} />
       ))}
-      {!isControlPoint && <Circle {...props} radius={clamp(4 * zoom, 2, 4)} />}
+      {!isControlPoint && <Circle {...props} radius={clamp(4 * zoom, 3,4)} />}
       {isControlPoint && (
         <Rect
           {...props}

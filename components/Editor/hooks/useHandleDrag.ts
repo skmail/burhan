@@ -13,7 +13,6 @@ import {
   PointTuple,
   SnapResult,
   Command,
-  Guideline,
   Table,
   Ruler,
 } from "../../../types";
@@ -63,6 +62,9 @@ export default function useHandleDrag({
   const cacheCommands = useRef<Table<Command> | undefined>(undefined);
 
   const onDrag: OnHandleDrag = useCallback((handle, options = {}) => {
+    if (!useFontStore.getState().snapshot) {
+      useFontStore.getState().updateSnapshot(getFreshCommands());
+    }
     options = {
       allowSnap: true,
       ...options,
@@ -78,7 +80,6 @@ export default function useHandleDrag({
     const commands = cacheCommands.current;
     const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
 
-    console.log(useCommandStore.getState().selected);
     const selections = getSelectedHandleIds().reduce((acc, id) => {
       if (acc.includes(id) || !commands.items[id]) {
         return acc;
@@ -278,6 +279,7 @@ export default function useHandleDrag({
   }, []);
 
   const onDragEnd = useCallback(() => {
+    useFontStore.getState().updateSnapshot();
     cacheCommands.current = undefined;
     setIsDragging(false);
     setGuidelines([]);

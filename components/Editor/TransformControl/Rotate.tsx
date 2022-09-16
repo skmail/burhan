@@ -64,7 +64,7 @@ export default function Rotate({
 
     position,
     offset,
-    size: 5,
+    size: 2,
   });
 
   return (
@@ -78,10 +78,10 @@ export default function Rotate({
         x={handlePosition.x * scaleValue + handlePosition.offset[0]}
         y={handlePosition.y * scaleValue + handlePosition.offset[1]}
         rotation={handlePosition.angle}
-         onMouseEnter={() => {
+        onMouseEnter={() => {
           if (!isTransforming) {
             buildDirectedImage(handlePosition.directionAngle).then((img) => {
-              document.body.style.cursor = `url(${img}) 10 25, auto`;
+              document.body.style.cursor = `url(${img}) 20 25, auto`;
             });
           }
         }}

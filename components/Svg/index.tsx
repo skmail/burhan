@@ -10,8 +10,13 @@ interface Props {
 }
 
 function Svg({ id, fill = false, base }: Props) {
-  const [descent, glyph] = useFontStore(
-    (state) => [state.font?.ascent, state.font.glyphs.items[id]],
+  const [descent, glyph, height, width] = useFontStore(
+    (state) => [
+      -state.font.ascent,
+      state.font.glyphs.items[id],
+      Math.abs(state.font.ascent - state.font.descent),
+      state.font.glyphs.items[id].bbox.width,
+    ],
     shallow
   );
 
@@ -22,11 +27,7 @@ function Svg({ id, fill = false, base }: Props) {
   }, [glyph.path.commands.items]);
 
   return (
-    <svg
-      width={"100%"}
-      height={"100%"}
-      viewBox={`0 0 ${glyph.bbox.width || 0} ${base}`}
-    >
+    <svg width={"100%"} height={"100%"} viewBox={`0 0 ${width} ${height}`}>
       <path
         transform={`translate(0, ${descent})`}
         fill={fill ? "currentColor" : "none"}

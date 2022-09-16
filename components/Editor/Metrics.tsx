@@ -37,8 +37,8 @@ export default function Metrics({
     {
       name: "ascent",
       origin: ascent,
-      y1: baseline - ascent * scale,
-      y2: baseline - ascent * scale,
+      y1: baseline + ascent * scale,
+      y2: baseline + ascent * scale,
       x1: 25,
       x2: width,
       color: "#C4CBD7",
@@ -46,8 +46,8 @@ export default function Metrics({
     {
       name: "descent",
       origin: descent,
-      y1: baseline - descent * scale,
-      y2: baseline - descent * scale,
+      y1: baseline + descent * scale,
+      y2: baseline + descent * scale,
       x1: 25,
       x2: width,
       color: "#C4CBD7",
@@ -55,8 +55,8 @@ export default function Metrics({
     {
       name: "capHeight",
       origin: capHeight,
-      y1: baseline - capHeight * scale,
-      y2: baseline - capHeight * scale,
+      y1: baseline + capHeight * scale,
+      y2: baseline + capHeight * scale,
       x1: 25,
       x2: width,
       color: "#C4CBD7",
@@ -64,8 +64,8 @@ export default function Metrics({
     {
       name: "xHeight",
       origin: xHeight,
-      y1: baseline - xHeight * scale,
-      y2: baseline - xHeight * scale,
+      y1: baseline + xHeight * scale,
+      y2: baseline + xHeight * scale,
       x1: 25,
       x2: width,
       color: "#C4CBD7",

@@ -91,8 +91,7 @@ export default function Scale({
       y={y * scaleValue}
       rotation={angle}
       onMouseEnter={(e) => {
-        if (!isTransforming) {
-          console.log("scale");
+        if (!isTransforming) { 
           buildDirectedImage(directionAngle, "/icons/scale.png").then((img) => {
             document.body.style.cursor = `url(${img}) 15 15, auto`;
           });

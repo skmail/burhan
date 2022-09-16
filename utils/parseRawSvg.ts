@@ -37,8 +37,7 @@ export default function parseRawSvg(
 
   let result: Command[] = [];
   const path = svgPath(paths).abs().unshort().unarc();
-
-  console.log(path);
+ 
   const bounds = [Infinity, Infinity, -Infinity, -Infinity];
   path.iterate((segment) => {
     const [command, ...points] = segment;

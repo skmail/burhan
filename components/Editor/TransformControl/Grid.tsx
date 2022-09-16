@@ -47,7 +47,7 @@ export function Grid({ matrix, affineMatrix, bounds, scale }: Props) {
     });
 
     data.push("Z");
-    console.log('asd', JSON.stringify(matrix))
+    
     return data.join(" ");
   }, [matrix, scale, bounds]);
 

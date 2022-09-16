@@ -73,7 +73,7 @@ export default function GlyphList({ font, glyphs, selected }: Props) {
                   : "text-main hover:bg-input-bg"
               } relative cursor-pointer`}
             >
-              <Svg id={id} fill base={font.ascent - font.descent} />
+              <Svg id={id} fill base={font.descent} />
             </div>
           );
         })}

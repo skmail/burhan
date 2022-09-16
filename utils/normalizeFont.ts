@@ -5,8 +5,13 @@ import normalize from "./normalize";
 import quadraticToQubic from "./quadraticToCubic";
 
 export default function normalizeFont(font: any) {
+ 
   return {
     ...font,
+    xHeight: -font.xHeight,
+    capHeight: -font.capHeight,
+    descent: -font.descent,
+    ascent: -font.ascent,
     glyphs: normalize(font.glyphs, (glyph: any) => {
       const commands = glyph.path.commands
         .reduce((acc: Command[], command: Command, index: number) => {

@@ -196,11 +196,6 @@ export default function useHighlightNewPoint({ x, baseline, scale }: Props) {
       const result = computePointOnBezierCurve(bz, pos, round);
 
       const maxDistance = 5 / scale;
-
-      // console.log(x
-      //   result,
-        
-      // )
       
       if (result && result.distance < maxDistance) {
         setNewPoint({

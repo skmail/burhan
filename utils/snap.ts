@@ -64,10 +64,14 @@ export default function snap(
         };
       }
 
+      // console.log(
+      //   handle.args[1], point.args[1], point.command
+      // )
       if (
         !isStrictHorizontal &&
         inRange(handle.args[1], point.args[1], scale)
       ) {
+        console.log(point, handle)
         result.command = point.command;
         result.args[1] = point.args[1];
         fromPoints.y = {

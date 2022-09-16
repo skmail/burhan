@@ -6,7 +6,7 @@ const flipY = (point: Point) => {
   if (!point.length) {
     return point;
   }
-  const flipY = ():Matrix => [
+  const flipY = (): Matrix => [
     [1, 0, 0, 0],
     [0, -1, 0, 0],
     [0, 0, 1, 0],
@@ -14,10 +14,7 @@ const flipY = (point: Point) => {
   ];
 
   const p = applyToPoint(flipY(), point);
-  return [ 
-    Number(String(p[0].toFixed(2))),
-    Number(String(p[1].toFixed(2))),
-  ];
+  return [Number(String(p[0].toFixed(2))), Number(String(p[1].toFixed(2)))];
 };
 export default function toOpentype(font: Font) {
   const glyphs: opentype.Glyph[] = [
@@ -44,7 +41,7 @@ export default function toOpentype(font: Font) {
         ...glyph.path.commands.items[id],
         args: flipY(glyph.path.commands.items[id].args),
       };
- 
+
       switch (command.command) {
         case "moveTo":
           path.moveTo(command.args[0], command.args[1]);
@@ -69,7 +66,6 @@ export default function toOpentype(font: Font) {
             args: flipY(glyph.path.commands.items[pointId].args),
           };
 
-    
           path.bezierCurveTo(
             command.args[0],
             command.args[1],
@@ -111,8 +107,8 @@ export default function toOpentype(font: Font) {
     familyName: "XXX",
     styleName: "Medium",
     unitsPerEm: font.unitsPerEm,
-    ascender: font.ascent,
-    descender: font.descent,
+    ascender: -font.ascent,
+    descender: -font.descent,
     glyphs: glyphs,
   });
 
@@ -122,6 +118,6 @@ export default function toOpentype(font: Font) {
   const blob = new Blob([dataView], { type: "font/opentype" });
 
   const url = globalThis.URL.createObjectURL(blob);
-  
+
   return url;
 }

@@ -15,9 +15,6 @@ export default function Preview({ glyph, data, font, viewMode }: Props) {
   const scale =
     (1 / Math.max(font.ascent - font.descent, glyph.bbox.width)) * size;
 
-  const h = (glyph.bbox.maxY + glyph.bbox.minY) * scale;
-  const w = (glyph.bbox.maxX + glyph.bbox.minX) * scale;
-
   const x = size / 2 - (glyph.bbox.width / 2) * scale;
 
   const y = size / 2 + ((glyph.bbox.minY + glyph.bbox.maxY) / 2) * scale;

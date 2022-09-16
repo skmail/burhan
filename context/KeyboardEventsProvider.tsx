@@ -29,10 +29,7 @@ export default function KeyboardEventsProvider({
       }
       keyboard.setKeyboardKeys({
         [e.code]: true,
-      });
-      // e.preventDefault();
-      // e.stopPropagation();
-      // console.log(e.code);
+      }); 
     };
     
     const onKeyUp = (e: KeyboardEvent) => {

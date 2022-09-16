@@ -27,7 +27,7 @@ export async function buildDirectedImage(
   }
 
   const img = imagesCache[cacheKey] ? imagesCache[cacheKey] : await load(path);
-
+  
   imagesCache[cacheKey] = img;
   canvas.width = img.height / 2;
   canvas.height = img.height / 2;
