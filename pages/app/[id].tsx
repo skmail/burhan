@@ -189,7 +189,7 @@ const App: NextPage = () => {
         }
         const result = parseRawSvg(
           String(reader.result),
-          glyph.advanceWidth,
+          glyph._metrics.advanceWidth,
           font.capHeight
         );
 
@@ -245,8 +245,6 @@ const App: NextPage = () => {
       </div>
     );
   }
-
-  const glyph = glyphs.items[selected];
 
   return (
     <div className="h-screen flex flex-col bg-white  overflow-hidden select-none">
@@ -468,34 +466,7 @@ const App: NextPage = () => {
             </div>
 
             <FlipButtons />
-            {!!glyph && (
-              <GlyphInfo
-                onFitWidth={() => {
-                  const bbox = computCommandsBounds(glyph.path.commands);
-                  const font = getFont();
-
-                  if (!font) {
-                    return;
-                  }
-
-                  updateFont({
-                    ...font,
-                    glyphs: {
-                      ...font.glyphs,
-                      items: {
-                        ...font.glyphs.items,
-                        [selected]: {
-                          ...font.glyphs.items[selected],
-                          bbox,
-                          advanceWidth: bbox.width,
-                        },
-                      },
-                    },
-                  });
-                }}
-                glyph={glyph}
-              />
-            )}
+            <GlyphInfo />
             <FontInfo font={font} />
           </div>
         )}

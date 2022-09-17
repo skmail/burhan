@@ -64,7 +64,7 @@ function Editor({ settings, history }: Props) {
     (1 / Math.max(Math.abs(font.ascent - font.descent), glyph.bbox.width)) *
     (Math.min(height, width) - 120);
 
-  let x = width / 2 - (glyph.advanceWidth / 2) * scaleWithoutZoom;
+  let x = width / 2 - (glyph.bbox.width / 2) * scaleWithoutZoom;
 
   let baseline =
     height / 2 - ((font.ascent + font.descent) / 2) * scaleWithoutZoom;
@@ -110,7 +110,7 @@ function Editor({ settings, history }: Props) {
     {
       id: "width",
       command: "width",
-      args: [glyph.advanceWidth, 0],
+      args: [glyph._metrics.advanceWidth, 0],
     },
     {
       id: "ascent",
@@ -302,7 +302,8 @@ function Editor({ settings, history }: Props) {
             scale={scale}
             baseline={baseline}
             x={x}
-            advanceWidth={glyph.advanceWidth}
+            advanceWidth={glyph._metrics.advanceWidth}
+            leftBearing={glyph._metrics.leftBearing}
           />
           <Group clipFunc={clipFunction}>
             <SnapshotPath x={x} y={baseline} scale={scale} />

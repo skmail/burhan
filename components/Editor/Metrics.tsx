@@ -1,4 +1,8 @@
+import { translate } from "@free-transform/core";
 import { Group, Line, Rect, Text } from "react-konva";
+import { useFontStore } from "../../store/font/reducer";
+import { Ruler } from "../../types";
+import { RulerLine } from "./RulerLine";
 
 interface Props {
   baseline: number;
@@ -9,8 +13,15 @@ interface Props {
   width: number;
   height: number;
   scale: number;
+  leftBearing: number;
   x: number;
   advanceWidth: number;
+}
+
+interface MetricLine extends Ruler {
+  name: string;
+  color: string;
+  resizable?: boolean;
 }
 export default function Metrics({
   baseline,
@@ -23,118 +34,125 @@ export default function Metrics({
   xHeight,
   x,
   advanceWidth,
+  leftBearing,
 }: Props) {
-  const metrics = [
+  const metrics: MetricLine[] = [
     {
+      id: "baseline",
+      position: baseline,
+      direction: "vertical",
+      color: "#C4CBD7",
       name: "baseline",
-      origin: baseline,
-      y1: baseline,
-      x1: 25,
-      x2: width,
-      y2: baseline,
-      color: "#C4CBD7",
     },
+
     {
+      id: "ascent",
       name: "ascent",
-      origin: ascent,
-      y1: baseline + ascent * scale,
-      y2: baseline + ascent * scale,
-      x1: 25,
-      x2: width,
+      position: baseline + ascent * scale,
+      direction: "vertical",
       color: "#C4CBD7",
     },
     {
+      id: "descent",
       name: "descent",
-      origin: descent,
-      y1: baseline + descent * scale,
-      y2: baseline + descent * scale,
-      x1: 25,
-      x2: width,
+      position: baseline + descent * scale,
+      direction: "vertical",
+
       color: "#C4CBD7",
     },
     {
+      id: "capHeight",
       name: "capHeight",
-      origin: capHeight,
-      y1: baseline + capHeight * scale,
-      y2: baseline + capHeight * scale,
-      x1: 25,
-      x2: width,
+      position: baseline + capHeight * scale,
+      direction: "vertical",
       color: "#C4CBD7",
     },
     {
       name: "xHeight",
-      origin: xHeight,
-      y1: baseline + xHeight * scale,
-      y2: baseline + xHeight * scale,
-      x1: 25,
-      x2: width,
+      id: "xHeight",
+      position: baseline + xHeight * scale,
+      direction: "vertical",
       color: "#C4CBD7",
     },
     {
+      id: "leftBearing",
       name: "Left bearing",
-      y1: 0,
-      y2: height,
-      x1: x,
-      x2: x,
+      position: x + leftBearing * scale,
       color: "#A1EDFD",
-      labelX: x - 75,
-      labelY: 30,
-      origin: height,
+      direction: "horizontal",
     },
     {
+      id: "advanceWidth",
       name: "Advance width",
-      origin: advanceWidth,
-      y1: 0,
-      y2: height,
-      x1: x + advanceWidth * scale,
-      x2: x + advanceWidth * scale,
+      position: x + advanceWidth * scale,
       color: "#A1EDFD",
-      labelX: x + advanceWidth * scale + 3,
-
-      labelY: 30,
+      direction: "horizontal",
+      resizable: true,
     },
   ];
 
   return (
     <>
       {metrics.map((metric) => (
-        <Group key={metric.name}>
+        <Group key={metric.id}>
+          <RulerLine
+            key={metric.id}
+            ruler={metric}
+            width={width}
+            height={height}
+            color={metric.color}
+            onMouseDown={(event) => {
+              if (!metric.resizable) {
+                return;
+              }
+              event.evt.preventDefault();
+              event.evt.stopPropagation();
+
+              const drag = translate(
+                {
+                  x: 0,
+                  y: 0,
+                  start: [event.evt.pageX, event.evt.pageY],
+                },
+                ({ x, y }) => {
+                  if (metric.id === "advanceWidth") {
+                    useFontStore.getState().updateSelectedGlyphMetrics({
+                      advanceWidth: Math.round(advanceWidth + x / scale),
+                    });
+                  }
+                }
+              );
+
+              const up = () => {
+                document.removeEventListener("pointermove", drag);
+                document.removeEventListener("pointerup", up);
+              };
+              document.addEventListener("pointermove", drag);
+              document.addEventListener("pointerup", up);
+            }}
+            onMouseEnter={(e) => {
+              if (!metric.resizable) {
+                return;
+              }
+              if (metric.direction === "horizontal") {
+                document.body.style.cursor = "ew-resize";
+              } else {
+                document.body.style.cursor = "ns-resize";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!metric.resizable) {
+                return;
+              }
+              document.body.style.cursor = "auto";
+            }}
+          />
           <Text
             text={metric.name}
-            y={metric.labelY ? metric.labelY : metric.y1 - 15}
-            x={metric.labelX ? metric.labelX : metric.x1}
-            padding={2}
+            y={metric.direction === "vertical" ? metric.position + 5 : 30}
+            x={metric.direction === "vertical" ? 30 : metric.position + 5}
             fill="#707C88"
           />
-          {metric.name !== "ascent" && metric.name !== "descent" && (
-            <Line
-              points={[metric.x1, metric.y1, metric.x2, metric.y2]}
-              strokeWidth={2}
-              stroke={metric.color || "black"}
-            />
-          )}
-
-          {metric.name === "ascent" && (
-            <Rect
-              x={metric.x1}
-              y={0}
-              width={metric.x2}
-              height={metric.y1}
-              fill="#C4CBD7"
-              opacity={0.2}
-            />
-          )}
-
-          {metric.name === "descent" && (
-            <Rect
-              x={metric.x1}
-              y={metric.y1}
-              width={metric.x2}
-              height={height - metric.y1}
-              fill="#C4CBD7"
-              opacity={0.2}
-            />
-          )}
         </Group>
       ))}
     </>

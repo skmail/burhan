@@ -84,7 +84,7 @@ export default function toOpentype(font: Font) {
       name: glyph.string,
       unicode: glyph.codePoints[0],
       unicodes: glyph.codePoints,
-      advanceWidth: glyph.advanceWidth,
+      advanceWidth: glyph._metrics.advanceWidth,
       path,
     });
 

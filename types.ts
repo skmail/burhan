@@ -64,16 +64,16 @@ export interface Path {
   commands: Table<Command>;
 }
 
-interface Glyph {
+export interface Glyph {
   path: Path;
   string: string;
   bbox: Box;
-  advanceWidth: number;
   id: string;
   codePoint: number;
   codePoints: number[];
   _metrics: {
     leftBearing: number;
+    advanceWidth: number;
   };
 }
 

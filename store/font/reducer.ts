@@ -1,11 +1,9 @@
-import { Command, Font, Table, NewPoint, Ruler } from "../../types";
+import { Command, Font, Table, NewPoint, Ruler, Glyph } from "../../types";
 import create from "zustand";
 import produce, { original } from "immer";
 import { useWorkspaceStore } from "../workspace/reducer";
 import { useHistoryStore } from "../history";
 import { History } from "../../types/History";
-
-type CommandsRecord = Record<string, Command>;
 
 interface State {
   font: Font;
@@ -44,6 +42,8 @@ interface State {
 
   updateSnapshot(snapshot?: Table<Command>): void;
   commitSnapshotToHistory: (sub?: History[]) => void;
+
+  updateSelectedGlyphMetrics: (metrics: Partial<Glyph["_metrics"]>) => void;
 }
 
 export const useFontStore = create<State>((set) => ({
@@ -208,6 +208,18 @@ export const useFontStore = create<State>((set) => ({
         state.selectedGlyphId = state.font.glyphs.ids[index];
       })
     ),
+  updateSelectedGlyphMetrics: (metrics) =>
+    set(
+      produce<State>((state) => {
+        if (!state.font?.glyphs.items[state.selectedGlyphId]) {
+          return;
+        }
+        state.font.glyphs.items[state.selectedGlyphId]._metrics = {
+          ...state.font?.glyphs.items[state.selectedGlyphId]._metrics,
+          ...metrics,
+        };
+      })
+    ),
 
   commitSnapshotToHistory: (sub = []) =>
     set(
@@ -215,7 +227,6 @@ export const useFontStore = create<State>((set) => ({
         if (!state.snapshot) {
           return;
         }
-
         useHistoryStore.getState().add({
           type: "commands.update",
           payload: {
@@ -230,6 +241,10 @@ export const useFontStore = create<State>((set) => ({
       })
     ),
 }));
+
+export const selectSelectedGlyph = (state: State): Glyph => {
+  return state.font?.glyphs.items[state.selectedGlyphId];
+};
 
 export const selectCommand =
   (id: string) =>

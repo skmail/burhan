@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { Group, Line, Rect, Text } from "react-konva";
 import shallow from "zustand/shallow";
 import useFreshSelector from "../../hooks/useFreshSelector";
 import { useFontStore } from "../../store/font/reducer";
 import { Ruler } from "../../types";
 import vector from "../../utils/vector";
+import { RulerLine } from "./RulerLine";
 
 interface Props {
   x: number;
@@ -15,107 +15,6 @@ interface Props {
   scaleWithoutZoom: number;
 }
 
-const LineBoundries = ({
-  ruler,
-  width,
-  height,
-  x,
-  y,
-}: {
-  ruler: Ruler;
-  scale: number;
-  width: number;
-  height: number;
-  x: number;
-  y: number;
-}) => {
-  const setActiveRuler = useFontStore((state) => state.setActiveRuler);
-  const getIsActiveRulerToDelete = useFreshSelector(
-    useFontStore,
-    (state) => state.isActiveRulerToDelete
-  );
-  return (
-    <Rect
-      onMouseDown={(e) => {
-        setActiveRuler(ruler.id);
-      }}
-      onMouseEnter={(e) => {
-        if (getIsActiveRulerToDelete()) {
-          return;
-        }
-        if (ruler.direction === "horizontal") {
-          document.body.style.cursor = "ew-resize";
-        } else {
-          document.body.style.cursor = "ns-resize";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (getIsActiveRulerToDelete()) {
-          return;
-        }
-        document.body.style.cursor = "auto";
-      }}
-      x={x}
-      y={y}
-      width={ruler.direction === "vertical" ? width : 10}
-      height={ruler.direction === "vertical" ? 10 : height}
-      opacity={0}
-      fill="black"
-    />
-  );
-};
-const RulerLine = ({
-  ruler,
-  baseline,
-  scale,
-  x,
-  width,
-  height,
-}: {
-  ruler: Ruler;
-  baseline: number;
-  scale: number;
-  x: number;
-  width: number;
-  height: number;
-}) => {
-  let pos = 0;
-
-  if (ruler.direction === "vertical") {
-    pos = ruler.position * -scale + baseline;
-  } else {
-    pos = x - ruler.position * -scale;
-  }
-  return (
-    <Group key={ruler.id}>
-      <LineBoundries
-        ruler={ruler}
-        scale={scale}
-        width={ruler.direction === "vertical" ? width : 10}
-        height={ruler.direction === "vertical" ? 10 : height}
-        x={ruler.direction === "vertical" ? 0 : pos - 5}
-        y={ruler.direction === "horizontal" ? 0 : pos - 5}
-      />
-      <Text
-        x={ruler.direction === "vertical" ? 5 : pos + 5}
-        y={ruler.direction === "horizontal" ? 5 : pos - 5}
-        fontSize={10}
-        fill="#ED6868"
-        text={`${Math.round(ruler.position)}`}
-        rotation={ruler.direction === "horizontal" ? 0 : -90}
-      />
-      <Line
-        points={
-          ruler.direction === "horizontal"
-            ? [pos, 0, pos, height]
-            : [0, pos, width, pos]
-        }
-        strokeWidth={1}
-        stroke={"#ED6868"}
-      />
-    </Group>
-  );
-};
 export default function RulerLines({
   x,
   baseline,
@@ -214,15 +113,43 @@ export default function RulerLines({
       setActiveRuler("");
     };
   }, [activeRuler]);
+
+  const getIsActiveRulerToDelete = useFreshSelector(
+    useFontStore,
+    (state) => state.isActiveRulerToDelete
+  );
+
   return (
     <>
       {rulers.map((ruler) => (
         <RulerLine
+          onMouseDown={(e) => {
+            setActiveRuler(ruler.id);
+          }}
+          onMouseEnter={(e) => {
+            if (getIsActiveRulerToDelete()) {
+              return;
+            }
+            if (ruler.direction === "horizontal") {
+              document.body.style.cursor = "ew-resize";
+            } else {
+              document.body.style.cursor = "ns-resize";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (getIsActiveRulerToDelete()) {
+              return;
+            }
+            document.body.style.cursor = "auto";
+          }}
           key={ruler.id}
-          scale={scale}
-          baseline={baseline}
-          ruler={ruler}
-          x={x}
+          ruler={{
+            ...ruler,
+            position:
+              ruler.direction === "vertical"
+                ? ruler.position * -scale + baseline
+                : x - ruler.position * -scale,
+          }}
           width={width}
           height={height}
         />
