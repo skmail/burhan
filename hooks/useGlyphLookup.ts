@@ -1,15 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-type Lookup = {
-  name: string;
-  oct: string;
-  hex: string;
-  html: string;
-  dec: string;
-  char: string;
-};
+import { GlyphLookup } from "../types";
+
 export default function useGlyphLookup(codePoints: number[]) {
-  return useQuery<Lookup[]>(
+  return useQuery<GlyphLookup[]>(
     ["glyph-lookup", ...codePoints],
     async () => {
       const responses = await Promise.all(

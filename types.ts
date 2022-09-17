@@ -158,3 +158,13 @@ export interface TransformSnapshot {
   perspectiveMatrix: Matrix;
   bounds: Box & Bounds;
 }
+
+
+export type GlyphLookup = {
+  name: string;
+  oct: string;
+  hex: string;
+  html: string;
+  dec: string;
+  char: string;
+};

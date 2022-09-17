@@ -105,7 +105,7 @@ function Editor({ settings, history }: Props) {
     {
       id: "x",
       command: "x",
-      args: [0, 0],
+      args: [glyph._metrics.leftBearing, 0],
     },
     {
       id: "width",

@@ -1,36 +1,67 @@
-import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import shallow from "zustand/shallow";
 import { useFontStore } from "../../store/font/reducer";
+import { GlyphLookup } from "../../types";
+import commandsToPathData from "../../utils/commandsToPathData";
 import Button from "../Button";
 
 export default function DownloadSvgButton() {
-  const font = useFontStore(
-    (state) => ({
-      familyName: String(state.font?.familyName),
-      subfamilyName: String(state.font?.familyName),
-      downloadUrl: state.downloadUrl,
-    }),
-    shallow
-  );
+  const client = useQueryClient();
+
   const download = useCallback(() => {
-    if (!font.downloadUrl) {
+    const state = useFontStore.getState();
+
+    const glyph = state.font.glyphs.items[state.selectedGlyphId];
+
+    const height = Math.abs(state.font.ascent - state.font.descent);
+    const width = glyph.bbox.width || 0;
+
+    const descent = -state.font.ascent;
+
+    const data = commandsToPathData(
+      glyph.path.commands.ids.map((id) => glyph.path.commands.items[id])
+    );
+
+    const svg = `
+    <svg width="100%" xmlns="http://www.w3.org/2000/svg" height="100%" viewBox="0 0 ${width} ${height}">
+    <path
+      transform="translate(0, ${descent})"
+      fill="#000"
+      stroke="currentColor"
+      strokeWidth="2"
+      d="${data}"
+    />
+  </svg>`;
+
+    if (!state.font) {
       return;
     }
-    const familyName = font.familyName;
-    const styleName = font.subfamilyName;
-    const fileName = familyName.replace(/\s/g, "") + "-" + styleName + ".otf";
+
+    const nameArray = client.getQueryData<GlyphLookup[]>([
+      "glyph-lookup",
+      ...glyph.codePoints,
+    ]);
+    let name = "";
+    if (nameArray) {
+      name = nameArray.map((lookup) => lookup.name).join(" ");
+    }
+
+    const fileName = [state.font.familyName, state.font.subfamilyName, name]
+      .join(" ")
+      .replace(/\s/g, "-");
+    (".svg");
     const link = document.createElement("a");
-    link.href = font.downloadUrl;
+    link.setAttribute(
+      "href",
+      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg)
+    );
+
     link.download = fileName;
     link.click();
-  }, [font]);
+  }, []);
   return (
-    <Button
-      roundedR={false}
-      onClick={download}
-      disabled={!font.downloadUrl}
-      className="px-3 pr-2"
-    >
+    <Button roundedR={false} onClick={download} className="px-3 pr-2">
       Download .SVG
       <svg
         className="w-8 h-8 ml-2"
