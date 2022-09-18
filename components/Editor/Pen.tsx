@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import shallow from "zustand/shallow";
 import useCommandStore from "../../store/commands/reducer";
 import { useTransformStore } from "../../store/transform";
@@ -6,8 +6,14 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import Button from "../Button";
 
 export default function Pen() {
-  const toggle = useWorkspaceStore((state) => state.toggleDrawing);
+  const togglePen = useWorkspaceStore((state) => state.toggleDrawing);
   const isActive = useWorkspaceStore((state) => state.drawing.enabled);
+
+  const toggle = useCallback(() => {
+    useCommandStore.getState().select([]);
+    useTransformStore.getState().disable();
+    togglePen();
+  }, []);
 
   return (
     <Button
