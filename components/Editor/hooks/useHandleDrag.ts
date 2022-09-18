@@ -20,19 +20,18 @@ import computeAngle from "../../../utils/computeAngle";
 import computeDistance from "../../../utils/computeDistance";
 import reflect from "../../../utils/reflect";
 import snap from "../../../utils/snap";
+import { useSnapPoints } from "./useSnapPoints";
 
 interface Props {
   scale: number;
   scaleWithoutZoom: number;
   settings: Settings;
-
-  snapPoints: Command[];
 }
+
 export default function useHandleDrag({
   scaleWithoutZoom,
   scale,
   settings,
-  snapPoints,
 }: Props) {
   const setGuidelines = useWorkspaceStore((state) => state.setGuidelines);
   const [getScaleWithoutZoom] = useFresh(scaleWithoutZoom);
@@ -48,14 +47,10 @@ export default function useHandleDrag({
   );
 
   const [isDragging, setIsDragging] = useState(false);
-  const [getSnapPoints] = useFresh(snapPoints);
-
-  const getRulers = useFreshSelector<Ruler[]>(
-    useFontStore,
-    (state) => state.rulers
-  );
 
   const cacheCommands = useRef<Table<Command> | undefined>(undefined);
+
+  const getSnapPoints = useSnapPoints();
 
   const onDrag: OnHandleDrag = useCallback((handle, options = {}) => {
     if (!useFontStore.getState().snapshot) {
@@ -92,7 +87,7 @@ export default function useHandleDrag({
         }
 
         if (
-          commands.items[commands.ids[index + 1]].command === "bezierCurveToCP1"
+          commands.items[commands.ids[index + 1]]?.command === "bezierCurveToCP1"
         ) {
           acc.push(commands.ids[index + 1]);
         }
@@ -118,31 +113,14 @@ export default function useHandleDrag({
     };
 
     if (options.allowSnap) {
-      const snapPoints = [...(getSnapPoints() as any)];
-
-      for (let ruler of getRulers()) {
-        snapPoints.push({
-          id: ruler.id,
-          command: ruler.direction + "Ruler",
-          args:
-            ruler.direction === "horizontal"
-              ? [ruler.position, 0]
-              : [0, ruler.position],
-        });
-      }
-
-      for (let id of commands.ids) {
-        if (selections.includes(id)) {
-          continue;
-        }
-        snapPoints.push(commands.items[id]);
-      }
+      const snapPoints = getSnapPoints();
 
       snapped = snap(
         {
           ...handle,
           args: xy,
         },
+        //@ts-ignore
         snapPoints,
         scale,
         scaleWithoutZoom,
@@ -153,6 +131,7 @@ export default function useHandleDrag({
       if (snapped.command !== "none" && snapped.fromPoints) {
         setGuidelines(
           snapped.fromPoints.map((p) => ({
+            id: p.id,
             command: p.command,
             points: [snapped.args[0], snapped.args[1], p.args[0], p.args[1]],
           }))

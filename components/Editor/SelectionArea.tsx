@@ -5,9 +5,9 @@ import useCommandStore from "../../store/commands/reducer";
 import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
 import { useWorkspaceStore } from "../../store/workspace/reducer";
 import { Bounds } from "../../types";
+import { inRange } from "../../utils/inRange";
 import onLeftButton from "../../utils/onLeftButton";
-import scaleX from "../../utils/scaleX";
-import scaleY from "../../utils/scaleY";
+import toScreenPoint from "../../utils/toScreenPoint";
 
 import vector from "../../utils/vector";
 
@@ -93,21 +93,21 @@ export default function SelectionArea({
       width = Math.max(Math.abs(width), 0);
       height = Math.max(Math.abs(height), 0);
 
-      const found = handles.ids.filter((id) => {
-        const handle = handles.items[id];
-        const scaledX = scaleX(handle.args[0], x, scale);
-        const scaledY = scaleY(handle.args[1], baseline, scale);
+      const bounds = {
+        x: position.x,
+        y: position.y,
+        width,
+        height,
+      };
 
-        if (
-          scaledX > position.x &&
-          scaledX < position.x + width &&
-          scaledY > position.y &&
-          scaledY < position.y + height
-        ) {
-          return true;
+      const found: string[] = [];
+
+      for (let id of handles.ids) {
+        const handle = handles.items[id];
+        if (inRange(toScreenPoint(handle.args, [x, baseline], scale), bounds)) {
+          found.push(handle.id);
         }
-        return false;
-      });
+      }
 
       setBounds({
         width,

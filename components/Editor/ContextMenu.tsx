@@ -3,7 +3,12 @@ import { useWorkspaceStore } from "../../store/workspace/reducer";
 import { usePopper } from "react-popper";
 import { useMemo, useState } from "react";
 
+type Item = {
+  label: string;
+  onClick: () => void;
+};
 export function ContextMenuInternal() {
+  return null
   const items = [
     {
       label: "To cubic-bezier",

@@ -25,8 +25,14 @@ function Svg({ id, fill = false }: Props) {
     );
   }, [glyph.path.commands.items]);
 
+ 
   return (
-    <svg width={"100%"} height={"100%"} viewBox={`0 0 ${width} ${height}`}>
+    <svg
+      id={glyph.id}
+      width={"100%"}
+      height={"100%"}
+      viewBox={`0 0 ${width} ${height}`}
+    >
       <path
         transform={`translate(0, ${descent})`}
         fill={fill ? "currentColor" : "none"}

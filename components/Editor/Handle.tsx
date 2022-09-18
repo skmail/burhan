@@ -84,9 +84,15 @@ export default function Handle({
     (state) => state.keyboard
   );
 
+  const isDrawing = useWorkspaceStore((state) => state.drawing.enabled);
+  const getIsDrawing = useFreshSelector(
+    useWorkspaceStore,
+    (state) => state.drawing.enabled
+  );
+
   const onMouseDown = useCallback(
     (e: any) => {
-      if (e.evt.button !== 0) {
+      if (e.evt.button !== 0 || getIsDrawing()) {
         return;
       }
       e.evt.preventDefault();
@@ -226,6 +232,9 @@ export default function Handle({
     return lines;
   }, shallow);
 
+  const isAligned = useWorkspaceStore((state) => {
+    return !!state.guidelines.find((guideline) => guideline.id === id);
+  }, shallow);
   // stale pro & zombie component
   if (!handle) {
     return null;
@@ -236,14 +245,17 @@ export default function Handle({
 
   const props = {
     // @ts-ignore
-    stroke: states.isSelected
+    stroke: isAligned
+      ? "#d946ef"
+      : states.isSelected
       ? "white"
-      : states.isHovered
+      : states.isHovered && !isDrawing
       ? "#3b82f6"
-      : handle.command === "moveTo"
-      ? "#4D7FEE"
       : "#4D7FEE",
-    strokeWidth: states.isHovered ? 2 : clamp(1 * zoom, 0.3, 1.2),
+    strokeWidth:
+      !isDrawing && (isAligned || states.isHovered)
+        ? 2
+        : clamp(1 * zoom, 0.3, 1.2),
     x: x + handle.args[0] * scale,
     y: baseline + handle.args[1] * scale,
     fill: states.isSelected ? "#3b82f6" : "white",
@@ -252,7 +264,7 @@ export default function Handle({
     onMouseEnter,
     onMouseLeave,
   };
-  
+
   if (!handle.args.length) {
     return null;
   }

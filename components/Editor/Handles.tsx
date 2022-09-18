@@ -17,10 +17,11 @@ interface Props {
 function Handles({ baseline, x, scale, zoom, onDrag, onDragEnd }: Props) {
   const ids = useFontStore((state) => selectCommandsTable(state).ids, shallow);
   const isTransformEnabled = useTransformStore((state) => state.enabled);
-
+ 
   if (isTransformEnabled) {
     return null;
   }
+
   return (
     <>
       {ids.map((id) => (

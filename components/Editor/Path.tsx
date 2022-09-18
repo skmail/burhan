@@ -22,7 +22,7 @@ export function Path({ x, y, scale, viewMode }: Props) {
     return Boolean(state.snapshot);
   });
   const opacity = `${hasSnapshot ? ".8" : "1"}`;
-
+ 
   return (
     <KonvaPath
       x={x}

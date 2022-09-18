@@ -1,21 +1,11 @@
 import { Bezier } from "bezier-js";
 import { useCallback } from "react";
-import useFresh from "../../../hooks/useFresh";
 import useFreshSelector from "../../../hooks/useFreshSelector";
 import { useHistoryStore } from "../../../store/history";
 import { selectCommandsTable, useFontStore } from "../../../store/font/reducer";
-import { Command, NewPoint, OnCommandsAdd, Point, Table } from "../../../types";
+import { Command, NewPoint, Point } from "../../../types";
+import { insertToArray } from "../../../utils/insertToArray";
 
-function insert<T>(arr: T[], index: number, newItem: T[], to = 0) {
-  return [
-    // part of the array before the specified index
-    ...arr.slice(0, index),
-    // inserted item
-    ...newItem,
-    // part of the array after the specified index
-    ...arr.slice(index + to),
-  ];
-}
 const toBzCommands = (p1: Point, p2: Point, p3: Point) => {
   return [
     {
@@ -62,7 +52,7 @@ export default function useInsertPoint() {
 
       primaryId = lineTo.id;
 
-      const ids = insert(commands.ids, index, [lineTo.id]);
+      const ids = insertToArray(commands.ids, index, [lineTo.id]);
       replaceCommands({
         ids: ids,
         items: {
@@ -91,7 +81,7 @@ export default function useInsertPoint() {
         args: [newPoint.point.x, newPoint.point.y],
       };
 
-      const ids = insert(commands.ids, index - 1, [lineTo.id]);
+      const ids = insertToArray(commands.ids, index - 1, [lineTo.id]);
 
       primaryId = lineTo.id;
 
@@ -151,7 +141,7 @@ export default function useInsertPoint() {
         ),
       ];
 
-      let ids = insert(
+      let ids = insertToArray(
         commands.ids,
         index - 2,
         newCommands.map((c) => c.id),

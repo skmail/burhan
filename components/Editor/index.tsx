@@ -53,9 +53,12 @@ function Editor({ settings, history }: Props) {
       xHeight: state.font.xHeight,
       capHeight: state.font.capHeight,
       glyph: state.font.glyphs.items[state.selectedGlyphId],
+      s: state.selectedGlyphId,
     }),
     shallow
   );
+
+  // console.log(font.s)
 
   const width = bounds.width;
   const height = bounds.height;
@@ -140,7 +143,6 @@ function Editor({ settings, history }: Props) {
     scaleWithoutZoom,
     scale,
     settings,
-    snapPoints: points,
   });
 
   useKeyboardMove({
@@ -261,7 +263,7 @@ function Editor({ settings, history }: Props) {
         x={x}
         baseline={baseline}
         scale={scale}
-        scaleWithoutZoom={scaleWithoutZoom}
+        workspaceRef={ref}
       />
 
       <Stage
@@ -280,7 +282,8 @@ function Editor({ settings, history }: Props) {
             !ref.current ||
             isDragging ||
             isHandleHovered ||
-            useTransformStore.getState().enabled
+            useTransformStore.getState().enabled ||
+            useWorkspaceStore.getState().drawing.enabled
           ) {
             return;
           }

@@ -7,12 +7,13 @@ const inRange = (p1: number, p2: number, scale: number = 1, range = 4) => {
 };
 
 export default function snap(
-  handle: Command,
+  handle: Pick<Command, "id" | "args">,
   points: Command[],
   scale: number = 1,
   zoom: number = 1,
   gridSize: number,
-  snapToOtherPoints: boolean
+  snapToOtherPoints: boolean,
+  exclude?: string[]
 ): SnapResult {
   let result: SnapResult = {
     command: "none",
@@ -23,6 +24,7 @@ export default function snap(
   const fromPoints: Record<
     string,
     {
+      id: string;
       command: string;
       args: PointTuple;
     }
@@ -30,7 +32,7 @@ export default function snap(
 
   if (snapToOtherPoints) {
     for (let point of points) {
-      if (point.id === handle.id) {
+      if (point.id === handle.id || (exclude && exclude.includes(point.id))) {
         continue;
       }
       if (
@@ -55,10 +57,18 @@ export default function snap(
           "bezierCurveToCP2",
         ].includes(point.command);
 
+      if (
+        ["quadraticCurveToCP", "bezierCurveToCP1", "bezierCurveToCP2"].includes(
+          point.command
+        )
+      ) {
+        continue;
+      }
       if (isHorizontal && inRange(handle.args[0], point.args[0], scale)) {
         result.command = point.command;
         result.args[0] = point.args[0];
         fromPoints.x = {
+          id: point.id,
           command: point.command,
           args: [point.args[0], point.args[1]],
         };
@@ -71,6 +81,7 @@ export default function snap(
         result.command = point.command;
         result.args[1] = point.args[1];
         fromPoints.y = {
+          id: point.id,
           command: point.command,
           args: [point.args[0], point.args[1]],
         };

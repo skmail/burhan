@@ -120,12 +120,14 @@ export interface SnapResult {
   command: string;
   args: PointTuple;
   fromPoints: {
+    id: string;
     command: string;
     args: PointTuple;
   }[];
 }
 
 export interface Guideline {
+  id: string;
   command: string;
   points: [number, number, number, number];
 }
@@ -159,7 +161,6 @@ export interface TransformSnapshot {
   bounds: Box & Bounds;
 }
 
-
 export type GlyphLookup = {
   name: string;
   oct: string;
@@ -168,3 +169,9 @@ export type GlyphLookup = {
   dec: string;
   char: string;
 };
+
+export interface Projection {
+  lastMoveTo: Command;
+  point: Vector;
+  command: Command;
+}
