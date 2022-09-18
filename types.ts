@@ -175,3 +175,6 @@ export interface Projection {
   point: Vector;
   command: Command;
 }
+
+
+export type DrawingTool = "pen" | "rect";

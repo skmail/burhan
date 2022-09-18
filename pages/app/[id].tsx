@@ -33,7 +33,8 @@ import NodeTransform from "../../components/Editor/NodeTransform";
 import { FlipButtons } from "../../components/Editor/FlipButtons";
 import { useTransformStore } from "../../store/transform";
 import commandsToPathData from "../../utils/commandsToPathData";
-import Pen from "../../components/Editor/Pen";
+import Pen from "../../components/Editor/DrawingButtons/Pen";
+import { DrawingButtons } from "../../components/Editor/DrawingButtons";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 
 const App: NextPage = () => {
@@ -389,7 +390,7 @@ const App: NextPage = () => {
                 </svg>
               </Button>
               <NodeTransform />
-              <Pen />
+              <DrawingButtons />
             </div>
             <Editor history={history} settings={settings} />
           </KeyboardEventsProvider>

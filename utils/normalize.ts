@@ -1,9 +1,11 @@
+import { Table } from "../types";
+
 export default function normalize<T extends { id: string }>(
   data: T[],
   itemUpdater?: (item: T) => T
 ) {
   return data.reduce(
-    (acc, item) => {
+    (acc: Table<T>, item) => {
       acc.ids.push(item.id);
 
       if (itemUpdater) {
@@ -15,8 +17,8 @@ export default function normalize<T extends { id: string }>(
       return acc;
     },
     {
-      ids: [] as string[],
-      items: {} as Record<string, T>,
+      ids: [],
+      items: {},
     }
   );
 }

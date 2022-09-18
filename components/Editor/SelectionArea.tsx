@@ -68,8 +68,8 @@ export default function SelectionArea({
       box = workspaceRef.current.getBoundingClientRect();
       startX = e.clientX;
       startY = e.clientY;
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("pointermove", onMouseMove);
+      document.addEventListener("pointerup", onMouseUp);
     });
 
     const onMouseMove = (e: MouseEvent) => {
@@ -124,8 +124,8 @@ export default function SelectionArea({
         width: 0,
         height: 0,
       });
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("pointermove", onMouseMove);
+      document.removeEventListener("pointerup", onMouseUp);
     };
 
     workspaceRef.current?.addEventListener("mousedown", onMousedown);

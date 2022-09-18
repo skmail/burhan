@@ -1,8 +1,7 @@
 import create from "zustand";
 import produce from "immer";
-import { Bounds, Guideline } from "../../types";
+import { Bounds, DrawingTool, Guideline } from "../../types";
 import vector from "../../utils/vector";
-type DrawingStep = "point" | "line" | "curve" | "end";
 
 interface State {
   ready: boolean;
@@ -20,12 +19,12 @@ interface State {
 
   drawing: {
     enabled: boolean;
-    step: DrawingStep;
+    tool: DrawingTool;
   };
 
   disableDrawing: () => void;
-  enableDrawing: () => void;
-  toggleDrawing: () => void;
+  enableDrawing: (tool: DrawingTool) => void;
+  toggleDrawing: (tool: DrawingTool) => void;
 
   contextMenu: {
     active: boolean;
@@ -58,7 +57,7 @@ export const useWorkspaceStore = create<State>((set) => ({
 
   drawing: {
     enabled: false,
-    step: "point",
+    tool: "pen",
   },
   transformControls: {
     origin: vector(0, 0),
@@ -77,16 +76,22 @@ export const useWorkspaceStore = create<State>((set) => ({
         state.drawing.enabled = false;
       })
     ),
-  enableDrawing: () =>
+  enableDrawing: (tool) =>
     set(
       produce<State>((state) => {
-        state.drawing.enabled = true;
+        state.drawing = {
+          enabled: true,
+          tool,
+        };
       })
     ),
-  toggleDrawing: () =>
+  toggleDrawing: (tool) =>
     set(
       produce<State>((state) => {
-        state.drawing.enabled = !state.drawing.enabled;
+        state.drawing = {
+          enabled: !state.drawing.enabled,
+          tool,
+        };
       })
     ),
   setGuidelines: (guidelines) =>
