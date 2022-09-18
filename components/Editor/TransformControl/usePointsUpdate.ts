@@ -23,10 +23,6 @@ export function usePointsUpdate() {
             toFixed(command.args[1] - bounds.minY),
           ]);
 
-          console.log( 
-            toFixed(command.args[0] - bounds.minX),
-            toFixed(command.args[1] - bounds.minY)
-          );
           commands[id] = {
             ...command,
             args: [

@@ -1,4 +1,6 @@
+import Circle from "./Circle";
 import Pen from "./Pen";
+import Pencil from "./Pencil";
 import Rect from "./Rect";
 
 export function DrawingButtons() {
@@ -6,6 +8,8 @@ export function DrawingButtons() {
     <>
       <Pen />
       <Rect />
+      <Circle />  
+      <Pencil />  
     </>
   );
 }

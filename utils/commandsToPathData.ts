@@ -13,7 +13,7 @@ const SVG_COMMANDS: Record<Command["command"], string> = {
 
 export default function commandsToPathData(commands: Command[]) {
   return commands
-    .map((command) => {
+    .map((command) => { 
       return `${SVG_COMMANDS[command.command]}${command.args.join(" ")} `;
     })
     .join(" ");

@@ -2,6 +2,7 @@ import { memo } from "react";
 import shallow from "zustand/shallow";
 import { selectCommandsTable, useFontStore } from "../../store/font/reducer";
 import { useTransformStore } from "../../store/transform";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 import { OnHandleDrag } from "../../types";
 import Handle from "./Handle";
 
@@ -17,8 +18,11 @@ interface Props {
 function Handles({ baseline, x, scale, zoom, onDrag, onDragEnd }: Props) {
   const ids = useFontStore((state) => selectCommandsTable(state).ids, shallow);
   const isTransformEnabled = useTransformStore((state) => state.enabled);
- 
-  if (isTransformEnabled) {
+  const hideByDrawing = useWorkspaceStore(
+    (state) => state.drawing.enabled && state.drawing.tool === "pencil"
+  );
+
+  if (isTransformEnabled || hideByDrawing) {
     return null;
   }
 

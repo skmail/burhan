@@ -1,6 +1,7 @@
 import { translate } from "@free-transform/core";
 import { Group, Line, Rect, Text } from "react-konva";
 import { useFontStore } from "../../store/font/reducer";
+import { useWorkspaceStore } from "../../store/workspace/reducer";
 import { Ruler } from "../../types";
 import { RulerLine } from "./RulerLine";
 
@@ -90,7 +91,7 @@ export default function Metrics({
       resizable: true,
     },
   ];
-
+  const isDrawing = useWorkspaceStore((state) => state.drawing.enabled);
   return (
     <>
       {metrics.map((metric) => (
@@ -102,6 +103,9 @@ export default function Metrics({
             height={height}
             color={metric.color}
             onMouseDown={(event) => {
+              if (isDrawing) {
+                return;
+              }
               if (!metric.resizable) {
                 return;
               }
@@ -131,7 +135,7 @@ export default function Metrics({
               document.addEventListener("pointerup", up);
             }}
             onMouseEnter={(e) => {
-              if (!metric.resizable) {
+              if (!metric.resizable || isDrawing) {
                 return;
               }
               if (metric.direction === "horizontal") {
@@ -141,7 +145,7 @@ export default function Metrics({
               }
             }}
             onMouseLeave={(e) => {
-              if (!metric.resizable) {
+              if (!metric.resizable || isDrawing) {
                 return;
               }
               document.body.style.cursor = "auto";

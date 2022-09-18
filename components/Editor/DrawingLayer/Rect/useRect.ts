@@ -34,6 +34,16 @@ export function useRect({ x, baseline, scale, workspaceRef }: Props) {
     x,
     baseline,
   });
+
+  const isExit = useWorkspaceStore((state) => state.keyboard.Escape);
+
+  useEffect(() => {
+    if (isExit) {
+      useWorkspaceStore.getState().setGuidelines([]);
+      useWorkspaceStore.getState().disableDrawing();
+    }
+  }, [isExit]);
+
   const updatePoints = usePointsUpdate();
 
   useEffect(() => {
@@ -88,6 +98,7 @@ export function useRect({ x, baseline, scale, workspaceRef }: Props) {
           args: [],
         },
       ]);
+
       bounds = computCommandsBounds(rect);
       useFontStore.getState().replaceCommands({
         ids: [...commands.ids, ...rect.ids],
@@ -110,7 +121,6 @@ export function useRect({ x, baseline, scale, workspaceRef }: Props) {
           height: bounds.height,
           // @ts-ignore
           aspectRatio: (e: PointerEvent) => {
-            console.log(e);
             return Boolean(e.shiftKey);
           },
           // @ts-ignore

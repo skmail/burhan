@@ -177,4 +177,4 @@ export interface Projection {
 }
 
 
-export type DrawingTool = "pen" | "rect";
+export type DrawingTool = "pen" | "rect" | "circle" | "pencil";

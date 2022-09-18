@@ -72,13 +72,12 @@ export default function useHandleDrag({
     const commands = cacheCommands.current;
     const amountToMove = [handle.args[0] / scale, handle.args[1] / scale];
 
-    const selections = getSelectedHandleIds().reduce((acc, id) => {
-      if (acc.includes(id) || !commands.items[id]) {
-        return acc;
-      }
-      const command = commands.items[id];
-      acc.push(id);
-      const index = commands.ids.indexOf(command.id);
+    const getSelectionAndRelations = (
+      command: Command,
+      index: number,
+      commands: Table<Command>
+    ) => {
+      const acc: string[] = [];
       if (command.command === "bezierCurveTo") {
         if (
           commands.items[commands.ids[index - 1]].command === "bezierCurveToCP2"
@@ -86,10 +85,21 @@ export default function useHandleDrag({
           acc.push(commands.ids[index - 1]);
         }
 
-        if (
-          commands.items[commands.ids[index + 1]]?.command === "bezierCurveToCP1"
-        ) {
-          acc.push(commands.ids[index + 1]);
+        if (commands.items[commands.ids[index + 1]]?.command === "closePath") {
+          for (let i = commands.ids.length - 1; i >= 0; i--) {
+            console.log(commands.items[commands.ids[i]]?.command);
+            if (commands.items[commands.ids[i]]?.command === "moveTo") {
+              acc.push(commands.ids[i]);
+              acc.push(
+                ...getSelectionAndRelations(
+                  commands.items[commands.ids[i]],
+                  i,
+                  commands
+                )
+              );
+              break;
+            }
+          }
         }
       } else if (command.command === "lineTo") {
         const nextPoint = commands.items[commands.ids[index + 1]];
@@ -97,7 +107,27 @@ export default function useHandleDrag({
           acc.push(nextPoint.id);
         }
       }
+
+      if (
+        commands.items[commands.ids[index + 1]]?.command === "bezierCurveToCP1"
+      ) {
+        acc.push(commands.ids[index + 1]);
+      }
+
       return acc;
+    };
+    const selections = getSelectedHandleIds().reduce((acc, id) => {
+      if (acc.includes(id) || !commands.items[id]) {
+        return acc;
+      }
+
+      acc.push(id);
+      const index = commands.ids.indexOf(id);
+
+      return [
+        ...acc,
+        ...getSelectionAndRelations(commands.items[id], index, commands),
+      ];
     }, [] as string[]);
 
     const command = commands.items[handle.id];
