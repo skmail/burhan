@@ -11,6 +11,26 @@ export default function FontInfo({ font }: Props) {
       </div>
 
       <div className="mt-4 space-y-2">
+        <div className="">
+          <div className="text-gray-600 font-medium mr-4">ascent</div>
+          <div className="text-sm text-gray-500">{font.ascent}</div>
+        </div>
+
+        <div className="">
+          <div className="text-gray-600 font-medium mr-4">capHeight</div>
+          <div className="text-sm text-gray-500">{font.capHeight}</div>
+        </div>
+
+        <div className="">
+          <div className="text-gray-600 font-medium mr-4">xHeight</div>
+          <div className="text-sm text-gray-500">{font.xHeight}</div>
+        </div>
+
+        <div className="">
+          <div className="text-gray-600 font-medium mr-4">lineGap</div>
+          <div className="text-sm text-gray-500">{font.lineGap}</div>
+        </div>
+
         {!!font.postscriptName && (
           <div className=" ">
             <div className="text-gray-600 font-medium mr-4">

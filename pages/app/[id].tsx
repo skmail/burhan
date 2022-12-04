@@ -397,7 +397,7 @@ const App: NextPage = () => {
         )}
 
         {rightSidebar && (
-          <div className="bg-white w-64 w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
+          <div className="bg-white overflow-y-auto w-64 w-full h-full shadow-xl border-l border-gray-300 p-4 space-y-4">
             <div>
               <label className="text-sm uppercase text-gray-700">
                 Grid size
