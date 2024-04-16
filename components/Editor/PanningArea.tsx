@@ -69,7 +69,7 @@ export default function PanningArea({ onPan, workspaceRef }: Props) {
       }
 
       const SENSITIVITY = 0.6;
-
+      
       onPan(-e.deltaX * SENSITIVITY, -e.deltaY * SENSITIVITY);
     };
 

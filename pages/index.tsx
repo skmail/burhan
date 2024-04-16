@@ -51,11 +51,11 @@ export default function Home() {
   }, [fontLoader.isSuccess, fontLoader.data]);
 
   const samples = [
-    ["0", "Font sample 1 [EN]"],
-    ["1", "Font sample 2 [EN]"],
-    ["2", "Font sample 4 [AR]"],
-    ["3", "Font sample 5 [JP]"],
-    ["4", "Font sample 3 [LATINE]"],
+    ["0", "Font sample 1", "English"],
+    ["1", "Font sample 2", "English"],
+    ["2", "Font sample 4", "Arabic"],
+    ["3", "Font sample 5", "Japanese"],
+    ["4", "Font sample 3", "Latin"],
   ];
 
   const [fontUrl, setFontUrl] = useState("");
@@ -66,110 +66,120 @@ export default function Home() {
   );
 
   return (
-    <div className="h-screen flex flex-col  items-center justify-center ">
-      <div className="flex  space-x-4 items-center justify-center ">
-        <button
-          disabled={fontLoader.isLoading}
-          className=" px-4 py-2  rounded bg-zinc-800 text-white enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50 relative"
-        >
-          <input
+    <>
+      <h1 className="lg:fixed static  left-1/2 lg:transform lg:-translate-x-1/2 bg-bg-1 px-4 py-2 pt -8 mx-auto w-fit text-6xl font-bold">
+        Burhan Fonts
+      </h1>
+      <div className="lg:h-screen grid lg:grid-cols-2 w-full max-w-sm lg:max-w-full mx-auto">
+        <div className="flex flex-col items-center p-4 justify-center gap-4  lg:border-r py-16">
+          <button
             disabled={fontLoader.isLoading}
-            onChange={(e) => {
-              if (!e.target.files?.length) {
-                return;
-              }
-
-              fontLoader.mutate({
-                file: e.target.files[0],
-              });
-              e.target.value = "";
-            }}
-            className="opacity-0 inset-0 absolute"
-            type="file"
-          />
-          Upload font file
-        </button>
-
-        <Popover className="relative">
-          {({ open }) => (
-            <>
-              <Popover.Button
-                className={`
-                px-4 py-2  rounded bg-zinc-800 text-white enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50 relative
-
-`}
-              >
-                Upload from url
-              </Popover.Button>
-
-              <Transition
-                as={Fragment}
-                enter="transition ease-out duration-200"
-                enterFrom="opacity-0 translate-y-1"
-                enterTo="opacity-100 translate-y-0"
-                leave="transition ease-in duration-150"
-                leaveFrom="opacity-100 translate-y-0"
-                leaveTo="opacity-0 translate-y-1"
-              >
-                <Popover.Panel className="p-4 absolute flex flex-col items-end left-1/2 z-10 w-96 bg-white shadow max-w-sm -translate-x-1/2 transform">
-                  <input
-                    onChange={(e) => {
-                      setFontUrl(e.target.value);
-                    }}
-                    placeholder="https://examples.com/font.woff2"
-                    className="w-full ring h-10 ring-gray-300 rounded px-2 focus:outline-none focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={() => {
-                      fontLoader.mutate({
-                        url: fontUrl,
-                      });
-                    }}
-                    disabled={!isGoodURL || fontLoader.isLoading}
-                    className="px-4 py-2 mt-4  rounded bg-zinc-800 text-white enabled:hover:ring enabled:hover:ring-gray-300 shadow disabled:opacity-50 relative"
-                  >
-                    Load
-                  </button>
-                </Popover.Panel>
-              </Transition>
-            </>
-          )}
-        </Popover>
-      </div>
-
-      <div className="flex space-x-2 items-center justify-center mt-6 flex-wrap">
-        {samples.map((sample) => (
-          <Button
-            disabled={fontLoader.isLoading}
-            key={sample[1]}
-            onClick={() =>
-              fontLoader.mutate({
-                sample: sample[0],
-              })
-            }
-            variant="secondary"
+            className="border-2 border-dashed border-gray-300  max-w-sm w-full rounded-lg p-8 hover:border-gray-200/90 relative overflow-hidden cursor-pointer flex items-center justify-center flex-col"
           >
-            {sample[1]}
-          </Button>
-        ))}
+            <input
+              disabled={fontLoader.isLoading}
+              onChange={(e) => {
+                if (!e.target.files?.length) {
+                  return;
+                }
+
+                fontLoader.mutate({
+                  file: e.target.files[0],
+                });
+                e.target.value = "";
+              }}
+              className="opacity-0 inset-0 absolute"
+              type="file"
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-12 h-12 mb-4 text-gray-300"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+              <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+              <path d="M9 13v-1h6v1" />
+              <path d="M12 12v6" />
+              <path d="M11 18h2" />
+            </svg>
+            <span className="font-bold">Click here or drop your font file</span>
+            <p className="text-gray-600">Supported files woff, ttf</p>
+          </button>
+          <div className="h-px bg-gray-200 w-full max-w-sm flex items-center justify-center my-8">
+            <div className="bg-white px-4">Or</div>
+          </div>
+          <div className="relative max-w-sm w-full">
+            <input
+              onChange={(e) => {
+                setFontUrl(e.target.value);
+              }}
+              placeholder="https://examples.com/font.woff2"
+              className="w-full ring h-10 ring-gray-300 rounded px-2 focus:outline-none focus:ring-blue-500"
+            />
+            <button
+              onClick={() => {
+                fontLoader.mutate({
+                  url: fontUrl,
+                });
+              }}
+              disabled={!isGoodURL || fontLoader.isLoading}
+              className="absolute bg-input-bg px-2 enabled:hover:bg-blue-600 enabled:bg-blue-500 enabled:text-white top-1 right-1 h-8 rounded"
+            >
+              Download
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col relative gap-4 p-4 lg:p-16 items-center justify-center bg-1">
+          <div
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23dad9db' fill-opacity='0.4'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+            className="absolute inset-0 -z-50"
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-white" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-4 w-full">
+            {samples.map((sample) => (
+              <button
+                className="border rounded-lg p-4 bg-white bg-1  text-start hover:bg-gray-50 shadow-sm"
+                disabled={fontLoader.isLoading}
+                key={sample[1]}
+                onClick={() =>
+                  fontLoader.mutate({
+                    sample: sample[0],
+                  })
+                }
+              >
+                <div className="text-gray-700">{sample[1]}</div>
+                <div className="text-gray-400 text-sm">{sample[2]}</div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {fontLoader.isLoading && (
-        <div className="flex flex-col space-2 items-center justify-center mt-6">
+        <div className="flex fixed bg-gray-900/40 backdrop-blur-sm text-white space-y-4 inset-0 flex-col space-2 items-center justify-center ">
           <div className="animate-spin w-8 h-8 bg-gray-200" />
-          <h1>Font is loading</h1>
+          <h1>Fetching font metadata and glyphs </h1>
         </div>
       )}
 
       {!fontLoader.isLoading && fontLoader.isError && (
-        <div className="text-red-500 text-xl mt-6">
+        <div className="bg-gray-900 text-white rounded  px-4 py-2 fixed bottom-4 left-4">
           {
             // @ts-ignore
             fontLoader.error.response.data.message
           }
         </div>
       )}
-      {/* <Button variant="secondary">Use sample file</Button> */}
-    </div>
+    </>
   );
 }

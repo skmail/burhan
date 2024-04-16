@@ -48,10 +48,10 @@ export default function useZoom({ workspaceRef, setPan, pan }: Props) {
 
       const xs = (clientX - _pan.current[0]) / zoomRef.current;
       const ys = (clientY - _pan.current[1]) / zoomRef.current;
-
+   
       const xoff = clientX - xs * zoom;
       const yoff = clientY - ys * zoom;
-
+      console.log(xoff, yoff)
       setPan([xoff, yoff]);
     };
 

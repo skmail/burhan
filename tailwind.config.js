@@ -14,7 +14,6 @@ module.exports = {
         "icon" :"#707C88",
         "main": "#4A5056",
         "outline": "#C4CBD7",
-
         "input-bg":"#F2F2F2"
       },
     },
