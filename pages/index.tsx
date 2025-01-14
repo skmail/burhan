@@ -1,12 +1,14 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useRouter } from "next/router";
-import { useEffect, Fragment, useState, useMemo } from "react";
-import Button from "../components/Button";
+import { useEffect, useState, useMemo } from "react";
 import { saveFont } from "../db/database";
 import normalizeFont from "../utils/normalizeFont";
-import { Popover, Transition } from "@headlessui/react";
 import validator from "validator";
+import { Font } from "../types";
+import loadFonts from "../api/loadFonts";
+import { TrashIcon } from "@heroicons/react/solid";
+import deleteFont from "../api/deleteFont";
 
 export default function Home() {
   const fontLoader = useMutation(
@@ -65,13 +67,16 @@ export default function Home() {
     [fontUrl]
   );
 
+ 
   return (
     <>
-      <h1 className="lg:fixed static  left-1/2 lg:transform lg:-translate-x-1/2 bg-bg-1 px-4 py-2 pt -8 mx-auto w-fit text-6xl font-bold">
-        Burhan Fonts
-      </h1>
+      <div>
+        <h1 className="bg-bg-1 px-4 py-2 pt -8 mx-auto w-fit text-6xl font-bold">
+          Burhan Fonts
+        </h1>
+      </div>
       <div className="lg:h-screen grid lg:grid-cols-2 w-full max-w-sm lg:max-w-full mx-auto">
-        <div className="flex flex-col items-center p-4 justify-center gap-4  lg:border-r py-16">
+        <div className="flex flex-col items-center p-4    gap-4  lg:border-r py-16 ">
           <button
             disabled={fontLoader.isLoading}
             className="border-2 border-dashed border-gray-300  max-w-sm w-full rounded-lg p-8 hover:border-gray-200/90 relative overflow-hidden cursor-pointer flex items-center justify-center flex-col"
@@ -135,7 +140,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex flex-col relative gap-4 p-4 lg:p-16 items-center justify-center bg-1">
+        <div className="flex flex-col relative gap-4 p-4 lg:p-16 items-center  bg-1">
           <div
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23dad9db' fill-opacity='0.4'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
@@ -157,11 +162,12 @@ export default function Home() {
                   })
                 }
               >
-                <div className="text-gray-700">{sample[1]}</div>
+                <div className="text-gray-700 text-sm">{sample[1]}</div>
                 <div className="text-gray-400 text-sm">{sample[2]}</div>
               </button>
             ))}
           </div>
+          <UserFonts />
         </div>
       </div>
 
@@ -173,7 +179,7 @@ export default function Home() {
       )}
 
       {!fontLoader.isLoading && fontLoader.isError && (
-        <div className="bg-gray-900 text-white rounded  px-4 py-2 fixed bottom-4 left-4">
+        <div className="bg-red-500 text-white rounded  px-4 py-2 fixed bottom-4 left-1/2 -translate-x-1/2">
           {
             // @ts-ignore
             fontLoader.error.response.data.message
@@ -182,4 +188,51 @@ export default function Home() {
       )}
     </>
   );
+}
+
+
+function UserFonts() {
+  const query = useQuery<Font[]>(["user-fonts"], loadFonts);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  if (!query.data || query.data.length === 0) {
+    return null
+  }
+  return (
+    <>
+      <div className="text-start self-start text-sm uppercase font-bold text-gray-500">
+        Previous Fonts
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-4 w-full">
+        {query.data.map((font) => (
+          <div key={font.id} className="relative group">
+            <button
+              onClick={() => {
+                deleteFont({ id: font.id })
+
+                queryClient.setQueryData<Font[]>(["user-fonts"], (data) => {
+                  if (!data) {
+                    return []
+                  }
+                  return data.filter(item => item.id !== font.id)
+                })
+
+              }}
+              className="absolute -right-3 -top-3 bg-red-400 opacity-0 group-hover:opacity-100 rounded-full w-6 h-6 flex items-center justify-center text-white ">
+              <TrashIcon className="w-4" />
+            </button>
+            <button
+              className="border rounded-lg p-4 bg-white bg-1 w-full  text-start hover:bg-gray-50 shadow-sm"
+
+              onClick={() => router.push("/app/" + font.id)}
+            >
+              <div className="text-gray-700 text-sm">{font.meta?.familyName ?? font.familyName}</div>
+              <div className="text-gray-400 text-sm">{font.meta?.subfamilyName ?? font.subfamilyName}</div>
+            </button>
+          </div>
+        ))}
+      </div >
+    </>
+  )
 }

@@ -98,6 +98,10 @@ export interface Font {
   subfamilyName: string;
   copyright: string;
   version: number;
+  meta?: {
+    familyName: string;
+    subfamilyName: string;
+  };
 }
 
 export type ViewMode = "outline" | "solid";
@@ -175,6 +179,5 @@ export interface Projection {
   point: Vector;
   command: Command;
 }
-
 
 export type DrawingTool = "pen" | "rect" | "circle" | "pencil";

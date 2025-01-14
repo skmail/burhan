@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Command, Font, ViewMode } from "../../types";
+import {  Font, ViewMode } from "../../types";
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { ExclamationCircleIcon } from "@heroicons/react/solid";
@@ -16,10 +16,8 @@ import normalize from "../../utils/normalize";
 import ToOpenType from "../../components/ToOpentype";
 import GlyphInfo from "../../components/GlyphInfo";
 import FontInfo from "../../components/FontInfo";
-import computCommandsBounds from "../../utils/computCommandsBounds";
 import GlyphList from "../../components/GlyphList";
 import loadFont from "../../api/loadFont";
-import { saveFont } from "../../db/database";
 
 import { useFontStore } from "../../store/font/reducer";
 
@@ -33,7 +31,6 @@ import NodeTransform from "../../components/Editor/NodeTransform";
 import { FlipButtons } from "../../components/Editor/FlipButtons";
 import { useTransformStore } from "../../store/transform";
 import commandsToPathData from "../../utils/commandsToPathData";
-import Pen from "../../components/Editor/DrawingButtons/Pen";
 import { DrawingButtons } from "../../components/Editor/DrawingButtons";
 const Editor = dynamic(() => import("../../components/Editor"), { ssr: false });
 

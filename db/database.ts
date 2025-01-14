@@ -33,15 +33,21 @@ export async function findFont(id: string): Promise<Font> {
 
   const value = await tx.store.get(id);
 
-  return value
-  const index = 33;
-  return {
-    ...value,
-    glyphs: {
-      ids: [value.glyphs.ids[index]],
-      items: {
-        [value.glyphs.ids[index]]: value.glyphs.items[value.glyphs.ids[index]],
-      },
-    },
-  };
+  return value;
+}
+
+export async function findFonts(): Promise<Font[]> {
+  const db = await connect();
+
+  const tx = db.transaction(FONTS_TABLE);
+
+  const value = await tx.store.getAll();
+
+  return value;
+}
+
+export async function deleteFont(id: string) {
+  const db = await connect();
+
+  await db.delete(FONTS_TABLE, id);
 }
