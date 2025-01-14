@@ -12,19 +12,19 @@ import { readFileSync } from "fs";
 import axios from "axios";
 import { Glyph } from "opentype.js";
 
-const idsTable: Record<string, string> = {};
 export const config = {
   api: {
     bodyParser: false,
   },
 };
-const uniqueId = () => {
-  const id = randomUUID();
 
-  if (idsTable[id]) {
+const idsTable: Set<string> = new Set();
+const uniqueId = (): string => {
+  const id = randomUUID();
+  if (idsTable.has(id)) {
     return uniqueId();
   }
-
+  idsTable.add(id);
   return id;
 };
 
@@ -56,7 +56,6 @@ export default async function handler(
     }
 
     res.status(200).json(font);
-  
   } catch (error) {
     if (error instanceof UserError) {
       res.status(400).json({

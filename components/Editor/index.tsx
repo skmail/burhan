@@ -308,6 +308,7 @@ function Editor({ settings, history }: Props) {
             advanceWidth={glyph._metrics.advanceWidth}
             leftBearing={glyph._metrics.leftBearing}
           />
+          
           <Group clipFunc={clipFunction}>
             <SnapshotPath x={x} y={baseline} scale={scale} />
             <Path
